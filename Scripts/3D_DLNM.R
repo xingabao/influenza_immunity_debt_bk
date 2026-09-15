@@ -11,19 +11,20 @@ dat.dir <- glue('{rt.dir}/data')
 fig.dir <- glue('{rt.dir}/Figures')
 tbl.dir <- glue('{rt.dir}/Tables')
 ofig <- tools::file_path_sans_ext(basename(basename(this.path::this.path())))
-base.size <- 18
-base.family <- 'serif'
+base.size <- 7
+base.family <- 'sans'
 base.col <- '#000000'
-flu <- 'FLUA'  # Options: 'FLUA' or 'FLUB'
+flu <- 'FLUB'  # Options: 'FLUA' or 'FLUB'
 n.years <- 15
 test.sta <- FALSE
+mm <- function(x) x / 25.4
 
 # Load data
 dat.raw <- readxl::read_excel(glue('{dat.dir}/Macau/FLU-CL-AQ-day.xlsx'))
 dat.raw$dif.temp <- dat.raw$max.temp - dat.raw$min.temp
 
 # Prepare plot data
-envs <- c('ave.temp', 'dif.temp', 'max.temp', 'min.temp', 'min.temp', 'humidity', 'sunshine')
+envs <- c('ave.temp', 'dif.temp', 'max.temp', 'min.temp', 'humidity', 'sunshine')
 
 for (env in envs) {
   
@@ -49,11 +50,11 @@ for (env in envs) {
   if (test.sta) layout(matrix(c(1, 2), 1, 2, byrow = TRUE))
   
   # Overall Effect of Temperature on Positive Rate
-  if (!test.sta) pdf(glue('{fig.dir}/{ofig}_{flu}_{env}_splines.pdf'), width = 5, height = 5, family = 'serif', bg = '#FFFFFF')
+  if (!test.sta) pdf(glue('{fig.dir}/{ofig}_{flu}_{env}_splines.pdf'), width = mm(90), height = mm(90), family = base.family, bg = '#FFFFFF')
   par(
     mar = c(3, 3, 1, 1),
-    cex.axis = 1.0,
-    cex.lab = 1.2,
+    cex.axis = 0.6,
+    cex.lab = 0.6,
     font.lab = 2,
     mgp = c(1.5, .5, 0)
   )
@@ -69,21 +70,21 @@ for (env in envs) {
   abline(h = 1, lty = 2)
   abline(v = cen.temp, lty = 2, col = 'blue')
   if (env == 'humidity') {
-    text(cen.temp, 0.8, labels = bquote(paste('Ref Humidity: ', .(sprintf('%.1f', cen.temp)), ' (%)')), col = 'blue')
+    text(cen.temp, 1.2, labels = bquote(paste('Ref Humidity: ', .(sprintf('%.1f', cen.temp)), ' (%)')), col = 'blue', cex = 0.6)
   } else if (env == 'sunshine') {
-    text(cen.temp, 0.8, labels = bquote(paste('Ref Hour: ', .(sprintf('%.1f', cen.temp)), ' (h)')), col = 'blue')
-  }  else {
-    text(cen.temp, 0.8, labels = bquote(paste('Ref Temp: ', .(sprintf('%.1f', cen.temp)), ' ', degree, 'C')), col = 'blue')
+    text(cen.temp, 0.8, labels = bquote(paste('Ref Hour: ', .(sprintf('%.1f', cen.temp)), ' (h)')), col = 'blue', cex = 0.6)
+  } else {
+    text(cen.temp, 0.8, labels = bquote(paste('Ref Temp: ', .(sprintf('%.1f', cen.temp)), ' ', degree, 'C')), col = 'blue', cex = 0.6)
   }
   if (!test.sta) dev.off()
   
   # 3D Exposure-Lag-Response Surface
-  if (!test.sta) pdf(glue('{fig.dir}/{ofig}_{flu}_{env}_3d.pdf'), width = 5, height = 5, family = 'serif', bg = '#FFFFFF')
+  if (!test.sta) pdf(glue('{fig.dir}/{ofig}_{flu}_{env}_3d.pdf'), width = mm(90), height = mm(90), family = base.family, bg = '#FFFFFF')
   par(
     mar = c(1, 1, 1, 1),
-    cex.axis = 1.0,
-    cex.lab = 1.2,
-    font.lab = 2,
+    cex.axis = 0.6,
+    cex.lab = 0.6,
+    font.lab = 1,
     tcl = -0.3
   )
   plot(
@@ -102,6 +103,41 @@ for (env in envs) {
 
   # Print model summary
   summary(model.binom)
+  
+  # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  # Export Source Data
+  # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  fig.label <- NULL; panel <- NULL
+  source.dir <- glue('{rt.dir}/Source data')
+  if (flu == 'FLUA') {
+    if (env == 'ave.temp') {
+      fig.label <- 'Fig.S14'; panel <- 'A,B'
+    } else if (env == 'dif.temp') {
+      fig.label <- 'Fig.S14'; panel <- 'C,D'
+    } else if (env == 'max.temp') {
+      fig.label <- 'Fig.S15'; panel <- 'A,B'
+    } else if (env == 'min.temp') {
+      fig.label <- 'Fig.S15'; panel <- 'C,D'
+    } else if (env == 'sunshine') {
+      fig.label <- 'Fig.S16'; panel <- 'A,B'
+    } else if (env == 'humidity') {
+      fig.label <- 'Fig.S16'; panel <- 'C,D'
+    }
+  } else if (flu == 'FLUB') {
+    if (env == 'ave.temp') {
+      fig.label <- 'Fig.S17'; panel <- 'A,B'
+    } else if (env == 'dif.temp') {
+      fig.label <- 'Fig.S17'; panel <- 'C,D'
+    } else if (env == 'max.temp') {
+      fig.label <- 'Fig.S18'; panel <- 'A,B'
+    } else if (env == 'min.temp') {
+      fig.label <- 'Fig.S18'; panel <- 'C,D'
+    } else if (env == 'sunshine') {
+      fig.label <- 'Fig.S19'; panel <- 'A,B'
+    } else if (env == 'humidity') {
+      fig.label <- 'Fig.S19'; panel <- 'C,D'
+    }
+  }
+      
+  saveRDS(pred.binom, file = glue('{source.dir}/{fig.label}{panel}.rds'))
 }
-
-

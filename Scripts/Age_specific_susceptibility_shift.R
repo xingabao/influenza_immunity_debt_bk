@@ -7,7 +7,6 @@ suppressMessages(suppressWarnings(library(ggplot2)))
 suppressMessages(suppressWarnings(library(forcats)))
 suppressMessages(suppressWarnings(library(lubridate)))
 suppressMessages(suppressWarnings(library(patchwork)))
-suppressMessages(suppressWarnings(library(RColorBrewer)))
 Sys.setlocale('LC_TIME', 'C')
 
 # Set Env
@@ -16,8 +15,8 @@ dat.dir <- glue('{rt.dir}/data')
 fig.dir <- glue('{rt.dir}/Figures')
 tbl.dir <- glue('{rt.dir}/Tables')
 ofig <- tools::file_path_sans_ext(basename(basename(this.path::this.path())))
-base.size <- 16
-base.family <- 'serif'
+base.size <- 7
+base.family <- 'sans'
 base.col <- '#000000'
 flu <- 'FLUA' # Options: 'FLUA' or 'FLUB'
 if (flu == 'FLUA') {
@@ -53,6 +52,21 @@ dat.aln <- dat.sur %>%
     season_week = ifelse(week >= s.week, week - (s.week - 1), week + (52 - (s.week - 1)))
   ) %>%
   filter(season_week > 0 & season_week <= 53)
+
+# Vectorized formatter, works on scalars and vectors
+format_p_exact <- function(p) {
+  vapply(p, function(x) {
+    if (is.na(x)) return(NA_character_)
+    if (x < .Machine$double.eps) {
+      return(sprintf('&lt; 2.220 × 10<sup>%d</sup>', floor(log10(.Machine$double.eps))))
+    }
+    if (x >= 0.001) {
+      return(formatC(x, format = 'f', digits = 3))
+    }
+    exponent <- floor(log10(x))
+    sprintf('%.3f × 10<sup>%d</sup>', x / 10^exponent, exponent)
+  }, character(1))
+}
 
 # ----------------------------------------------
 # 1. Create "survival curves" (Figures A & B)
@@ -91,10 +105,7 @@ get_p_value_labels <- function(df, target_period, ref_age = '[0, 5)') {
       p_val = ks_res$p.value,
       p_label = case_when(
         Age == ref_age ~ glue('{Age} (Ref.)'),
-        p_val < 0.001  ~ glue("{Age} (*P* < 0.001)"),
-        p_val < 0.05   ~ glue("{Age} (*P* = {format(p_val, digits=2)})"),
-        p_val < 0.01   ~ glue("{Age} (*P* = {format(p_val, digits=2)})"),
-        TRUE           ~ glue('{Age} ~ (NS)')
+        TRUE           ~ glue("{Age} (*P* = {format_p_exact(p_val)})")
       )
     ) %>%
     mutate(p_label = fct_inorder(p_label)) %>%
@@ -115,7 +126,7 @@ plot.survival.with.p <- function(data_sub, title_str, label_df) {
   
   # K-S Test vs Reference Group [0, 5)
   ggplot(plot_data, aes(x = season_week, y = inv_cdf, color = p_label, group = Age)) +
-    geom_line(linewidth = 1, alpha = 0.8) +
+    geom_line(linewidth = 0.5, alpha = 0.8) +
     scale_color_manual(values = age.pal) +
     scale_y_continuous(labels = scales::percent) +
     labs(
@@ -128,11 +139,13 @@ plot.survival.with.p <- function(data_sub, title_str, label_df) {
     theme(
       axis.text = element_text(size = base.size, family = base.family, color = base.col),
       axis.title.y = element_text(size = base.size, family = base.family, color = base.col, face = 'bold', margin = margin(l = 0.5, unit = 'cm')),
-      legend.position = c(0.05, 0.60), 
+      legend.position = c(0.05, 0.58), 
       legend.justification = c(0, 1),
       legend.background = element_rect(fill = 'transparent', color = NA),
-      legend.key.height = unit(0.6, 'cm'),
-      legend.text = element_markdown(size = base.size * 0.9, family = base.family, color = base.col),
+      legend.title = element_markdown(size = base.size, family = base.family, color = base.col),
+      legend.text = element_markdown(size = base.size , family = base.family, color = base.col),
+      legend.key.spacing.y = unit(0.1, units = 'cm'),
+      legend.key.height = unit(0.25, units = 'cm'),
       legend.margin = margin(0, 0, 0, 0)
     ) +
     guides(color = guide_legend(ncol = 1))
@@ -175,10 +188,7 @@ get_magnitude_p_values <- function(df, target_period, ref_age = '[0, 5)') {
       p_val = wilcox_res$p.value,
       p_label = case_when(
         Age == ref_age ~ glue('{Age} (Ref.)'),
-        p_val < 0.001  ~ glue("{Age} (*P* < 0.001)"),
-        p_val < 0.05   ~ glue("{Age} (*P* = {format(p_val, digits=2)})"),
-        p_val < 0.01   ~ glue("{Age} (*P* = {format(p_val, digits=2)})"),
-        TRUE           ~ glue('{Age} ~ (NS)')
+        TRUE           ~ glue("{Age} (*P* = {format_p_exact(p_val)})")
       )
     ) %>%
     mutate(p_label = fct_inorder(p_label)) %>%
@@ -190,14 +200,12 @@ get_magnitude_p_values <- function(df, target_period, ref_age = '[0, 5)') {
 labels_mag_pre <- suppressWarnings(get_magnitude_p_values(dat.curve, 'Pre_Pandemic', ref_age = '[0, 5)'))
 labels_mag_post <- suppressWarnings(get_magnitude_p_values(dat.curve, 'Post_Pandemic', ref_age = '[0, 5)'))
 
-my.pal <- brewer.pal(7, 'Dark2') 
-
 plot.curve <- function(data_sub, title_str, label_df) {
   plot_data <- data_sub %>%
     left_join(label_df, by = 'Age')
   
   ggplot(plot_data, aes(x = season_week, y = cumulative_rate, color = p_label, group = Age)) +
-    geom_line(linewidth = 1, alpha = 0.8) +
+    geom_line(linewidth = 0.5, alpha = 0.8) +
     scale_color_manual(values = age.pal) +
     labs(
       subtitle = title_str,
@@ -213,8 +221,10 @@ plot.curve <- function(data_sub, title_str, label_df) {
       legend.position = c(0.05, 0.95), 
       legend.justification = c(0, 1),
       legend.background = element_rect(fill = 'transparent', color = NA),
-      legend.key.height = unit(0.6, 'cm'),
-      legend.text = element_markdown(size = base.size * 0.9, family = base.family, color = base.col),
+      legend.title = element_markdown(size = base.size, family = base.family, color = base.col),
+      legend.text = element_markdown(size = base.size, family = base.family, color = base.col),
+      legend.key.spacing.y = unit(0.1, units = 'cm'),
+      legend.key.height = unit(0.25, units = 'cm'),
       legend.margin = margin(0, 0, 0, 0)
     ) +
     guides(color = guide_legend(ncol = 1))
@@ -240,6 +250,8 @@ dat.rr <- dat.aln %>%
     se_log_rr = sqrt((sd_val_Post_Pandemic^2 / (n_Post_Pandemic * mean_val_Post_Pandemic^2)) + (sd_val_Pre_Pandemic^2 / (n_Pre_Pandemic * mean_val_Pre_Pandemic^2)) ),
     lower_ci = exp(log(RR) - 1.96 * se_log_rr),
     upper_ci = exp(log(RR) + 1.96 * se_log_rr),
+    # z-test P value, consistent with the delta-method CI
+    p_exact = 2 * pnorm(abs(log(RR) / se_log_rr), lower.tail = FALSE),
     significance = case_when(
       lower_ci > 1 ~ 'Significant Increase (Debt)',
       upper_ci < 1 ~ 'Significant Decrease',
@@ -251,16 +263,19 @@ dat.rr <- dat.aln %>%
 nudge_amount <- -0.25 
 p_f <- ggplot(dat.rr, aes(x = RR, y = fct_rev(Age))) +
   geom_vline(xintercept = 1, linetype = 'dashed', color = 'gray50') +
-  geom_errorbarh(aes(xmin = lower_ci, xmax = upper_ci, color = significance), height = 0.3, linewidth = 0.8, position = position_nudge(y = nudge_amount)) +
-  geom_point(aes(color = significance), size = 4, position = position_nudge(y = nudge_amount)) +
-  geom_text(
-    aes(label = sprintf('%.3f [%.3f - %.3f]', RR, lower_ci, upper_ci)), 
+  geom_errorbarh(aes(xmin = lower_ci, xmax = upper_ci, color = significance), height = 0.3, linewidth = 0.5, position = position_nudge(y = nudge_amount)) +
+  geom_point(aes(color = significance), size = 2.5, position = position_nudge(y = nudge_amount)) +
+  geom_richtext(
+    aes(label = sprintf('%.3f [%.3f - %.3f], *P* = %s', RR, lower_ci, upper_ci, format_p_exact(p_exact))), 
     position = position_nudge(y = nudge_amount),
-    vjust = -1.25,
-    size = base.size / 3.88,
-    color = '#000000'
+    vjust = -0.6,
+    size = base.size / ggplot2::.pt,
+    color = '#000000',
+    fill = NA,
+    label.color = NA,
+    label.padding = unit(0, 'lines')
   ) +
-  scale_x_continuous(limits = c(0, 4), expand = c(0, 0)) +
+  scale_x_continuous(limits = c(ifelse(test = flu == 'FLUB', yes = -0.2, no = 0), 4), breaks = c(0, 1, 2, 3, 4), expand = c(0, 0)) +
   scale_color_manual(
     values = c(
       'Significant Increase (Debt)' = '#CC79A7', 
@@ -273,16 +288,26 @@ p_f <- ggplot(dat.rr, aes(x = RR, y = fct_rev(Age))) +
     x = 'Rate Ratio [95% CI]',
     y = ''
   ) +
+  guides(
+    color = guide_legend(
+      override.aes = list(
+        size = 1.5,
+        linewidth = 0.5,
+        linetype = 1 
+      )
+    )
+  ) +
   theme_bw(base_size = base.size, base_family = base.family) +
   theme(
     panel.grid = element_blank(),
     axis.title.x = element_text(size = base.size, family = base.family, face = 'bold', color = base.col, margin = margin(t = 0.2, unit = 'cm')),
     axis.text = element_text(size = base.size, family = base.family, color = base.col),
-    legend.position = c(0.70, ifelse(flu == 'FLUA', yes = 0.30, no = 0.30)), 
+    legend.position = c(0.75, ifelse(flu == 'FLUA', yes = 0.35, no = 0.35)), 
     legend.justification = c(0, 1),
     legend.background = element_rect(fill = 'transparent', color = NA),
-    legend.key.height = unit(0.7, 'cm'),
-    legend.text = element_text(size = base.size * 0.9, family = base.family, color = base.col),
+    legend.key.spacing.y = unit(0.15, units = 'cm'),
+    legend.key.height = unit(0.25, units = 'cm'),
+    legend.text = element_text(size = base.size, family = base.family, color = base.col),
     legend.margin = margin(0, 0, 0, 0),
     legend.title = element_blank()
   )
@@ -293,8 +318,43 @@ p_f <- ggplot(dat.rr, aes(x = RR, y = fct_rev(Age))) +
 gg <- (p_a + p_b) / (p_pre + p_post) / p_f +
   plot_layout(heights = c(1, 1, 0.8))
 
-print(dat.rr %>% dplyr::select(Age, RR, lower_ci, upper_ci, significance))
+print(dat.rr %>% dplyr::select(Age, RR, p_exact))
 
 # Save to file
-width = 12; height = 13
-ggsave(gg, filename = glue('{fig.dir}/{ofig}_{flu}.pdf'), width = width, height = height, units = 'in', bg = '#FFFFFF')
+width = 180; height = 185
+ggsave(gg, filename = glue('{fig.dir}/{ofig}_{flu}.pdf'), width = width, height = height, units = 'mm', device = cairo_pdf, bg = '#FFFFFF')
+
+
+# ------------------------------------------------------------------------------
+# Export Source Data
+# ------------------------------------------------------------------------------
+source.dir <- glue('{rt.dir}/Source data')
+if (flu == 'FLUA') {
+  fig.label <- 'Fig.3'
+} else {
+  fig.label <- 'Fig.S12'
+}
+
+write_source_txt <- function(df, panel, title) {
+  con <- file(glue('{source.dir}/{fig.label}{panel}.txt'), open = 'wt', encoding = 'UTF-8')
+  writeLines(c(
+    glue('Source data for {fig.label}{panel}: {title}')
+  ), con)
+  write.table(df, file = con, sep = '\t', row.names = FALSE, quote = FALSE, na = '')
+  close(con)
+}
+
+write_source_txt(
+  dat.survival, panel = 'A,B',
+  title = 'Pre- and Post- pandemic inverse cumulative distribution (survival curves) of influenza infections by age group'
+)
+
+write_source_txt(
+  dat.curve, panel = 'C,D',
+  title = 'Pre- and Post- pandemic cumulative positivity rate trajectories by age group'
+)
+
+write_source_txt(
+  dat.rr, panel = 'E',
+  title = 'Rate ratios (RR) of post- vs pre-pandemic susceptibility by age group'
+)

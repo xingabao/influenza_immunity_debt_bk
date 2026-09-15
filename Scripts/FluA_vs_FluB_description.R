@@ -18,8 +18,8 @@ ofig <- tools::file_path_sans_ext(basename(basename(this.path::this.path())))
 this <- 'Macau'  # Options: 'HK' or 'Macau'
 
 # Plotting Constants
-base.size <- 18
-base.family <- 'serif'
+base.size <- 7
+base.family <- 'sans'
 base.col <- '#000000'
 
 # Load data
@@ -57,7 +57,7 @@ cols <- c('FLUA' = '#CC79A7', 'FLUB' = '#56B4E9')
 # ++++++++++++++++++++++++++++++++++++++++++
 p1 <- ggplot(dat.long, aes(x = as.Date(date), y = Cases, fill = Subtype)) +
   geom_area(alpha = 0.6, position = 'identity') + 
-  geom_smooth(aes(color = Subtype), se = FALSE, span = 0.1, size = 0.8) +
+  geom_smooth(aes(color = Subtype), se = FALSE, span = 0.1, size = 0.5) +
   scale_fill_manual(values = cols) +
   scale_color_manual(values = cols) +
   scale_x_date(
@@ -68,7 +68,7 @@ p1 <- ggplot(dat.long, aes(x = as.Date(date), y = Cases, fill = Subtype)) +
   ) +
   scale_y_continuous(expand = c(0, 0)) +
   annotate('rect', xmin = as.Date(sdate), xmax = as.Date(edate), ymin = -Inf, ymax = Inf, alpha = 0.1, fill = 'gray30') +
-  annotate('text', x = as.Date('2021-07-31'), y = 0.25, label = 'NPIs / COVID-19 Pandemic', color = base.col, size = base.size / 3.88, family = base.family) +
+  annotate('text', x = as.Date('2021-07-31'), y = 0.25, label = 'NPIs / COVID-19 Pandemic', color = base.col, size = base.size / ggplot2::.pt, family = base.family) +
   labs(subtitle = NULL, y = 'Weekly Cases', x = NULL) +
   theme_bw(base_size = base.size, base_family = base.family) +
   theme(
@@ -78,7 +78,7 @@ p1 <- ggplot(dat.long, aes(x = as.Date(date), y = Cases, fill = Subtype)) +
     axis.text.x = element_blank(),
     axis.text.y = element_text(size = base.size * 0.9, family = base.family, color = base.col),
     plot.subtitle = element_text(size = base.size * 0.9, family = base.family, color = base.col),
-    plot.margin = margin(r = 20, b = 20)
+    plot.margin = margin(r = 3, b = 10)
   )
     
 # ++++++++++++++++++++++++++++++++++++++++++
@@ -109,11 +109,12 @@ p2 <- ggplot(df.prop, aes(x = as.Date(date), y = Proportion, fill = Subtype)) +
     legend.position.inside = c(0.80, 0.72),
     legend.background = element_rect(fill = '#FFFFFF66'),
     legend.direction = 'horizontal',
+    legend.key.size = unit(3, 'mm'),
     axis.title.x = element_blank(),
-    axis.title.y.left = element_text(size = base.size * 0.9, family = base.family, color = base.col, face = 'bold'),
-    axis.text = element_text(size = base.size * 0.9, family = base.family, color = base.col),
-    plot.subtitle = element_text(size = base.size * 0.9, family = base.family, color = base.col),
-    plot.margin = margin(r = 20)
+    axis.title.y.left = element_text(size = base.size, family = base.family, color = base.col, face = 'bold'),
+    axis.text = element_text(size = base.size, family = base.family, color = base.col),
+    plot.subtitle = element_text(size = base.size, family = base.family, color = base.col),
+    plot.margin = margin(r = 3)
   )
 
 # Combination
@@ -123,5 +124,34 @@ gg <- p1 / p2 + plot_layout(heights = c(1, 1))
 print(gg)
 
 # Save to file
-width = 12; height = 5
-ggsave(gg, filename = glue('{fig.dir}/{ofig}_{this}.pdf'), width = width, height = height, units = 'in', bg = '#FFFFFF')
+ggsave(gg, filename = glue('{fig.dir}/{ofig}_{this}.pdf'), width = 180, height = 75, units = 'mm', bg = '#FFFFFF')
+
+
+# ------------------------------------------------------------------------------
+# Export Source Data
+# ------------------------------------------------------------------------------
+source.dir <- glue('{rt.dir}/Source data')
+if (this == 'HK') {
+  fig.label <- 'Fig.S21'
+} else {
+  fig.label <- 'Fig.5'
+}
+
+write_source_txt <- function(df, panel, title) {
+  con <- file(glue('{source.dir}/{fig.label}{panel}.txt'), open = 'wt', encoding = 'UTF-8')
+  writeLines(c(
+    glue('Source data for {fig.label}{panel}: {title}')
+  ), con)
+  write.table(df, file = con, sep = '\t', row.names = FALSE, quote = FALSE, na = '')
+  close(con)
+}
+
+write_source_txt(
+  dat.long, panel = 'F',
+  title = 'Longitudinal weekly influenza A and B caseloads, 2010-2025'
+)
+
+write_source_txt(
+  df.prop, panel = 'G',
+  title = 'Proportional representation of influenza A and B among weekly cases, 2010-2025'
+)

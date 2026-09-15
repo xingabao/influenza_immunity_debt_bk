@@ -12,6 +12,7 @@ suppressMessages(suppressWarnings(library(splines)))
 suppressMessages(suppressWarnings(library(parallel)))
 suppressMessages(suppressWarnings(library(ISOweek)))
 suppressMessages(suppressWarnings(library(stringr)))
+suppressMessages(suppressWarnings(library(ggtext)))
 suppressMessages(suppressWarnings(library(ggplot2)))
 suppressMessages(suppressWarnings(library(patchwork)))
 suppressMessages(suppressWarnings(library(lubridate)))
@@ -84,8 +85,8 @@ seed <- 100
 this <- 'Macau'  # Options: 'HK' or 'Macau'
 
 # Plotting Constants
-base.size <- 18
-base.family <- 'serif'
+base.size <- 7
+base.family <- 'sans'
 base.col <- '#000000'
 
 # Load data
@@ -232,10 +233,10 @@ p_sens <- ggplot(sens_results, aes(x = factor(E), y = Rho, fill = Direction)) +
   theme_classic(base_size = base.size, base_family = base.family) +
   theme(
     legend.position = 'none',
-    axis.text = element_text(size = base.size * 0.9, family = base.family, color = base.col),
-    plot.subtitle = element_text(size = base.size * 0.9, family = base.family, color = base.col),
-    axis.title.y = element_text(size = base.size * 0.9, family = base.family, color = base.col, face = 'bold'),
-    axis.title.x = element_text(size = base.size * 0.9, family = base.family, color = base.col, face = 'bold', margin = margin(t = 5))
+    axis.text = element_text(size = base.size, family = base.family, color = base.col),
+    plot.subtitle = element_text(size = base.size, family = base.family, color = base.col),
+    axis.title.y = element_text(size = base.size, family = base.family, color = base.col, face = 'bold'),
+    axis.title.x = element_text(size = base.size, family = base.family, color = base.col, face = 'bold', margin = margin(t = 5))
   ); p_sens
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -244,7 +245,7 @@ p_sens <- ggplot(sens_results, aes(x = factor(E), y = Rho, fill = Direction)) +
 max_len <- nrow(dat.ccm)
 lib_str <- paste(seq(10, max_len - 5, by = 25), collapse = ' ')
 nsample <- 100
-n_surrogates <- 500 
+n_surrogates <- 500
 
 run_ccm_with_surrogates <- function(df, lib_col, tar_col, E, lib_str, n_samp, n_surr) {
   
@@ -253,12 +254,12 @@ run_ccm_with_surrogates <- function(df, lib_col, tar_col, E, lib_str, n_samp, n_
   # 1.Real Data
   ccm_real <- tryCatch({
     CCM(
-      dataFrame = df, 
-      E = E, 
-      columns = lib_col, 
+      dataFrame = df,
+      E = E,
+      columns = lib_col,
       target = tar_col,
-      libSizes = lib_str, 
-      sample = n_samp, 
+      libSizes = lib_str,
+      sample = n_samp,
       random = TRUE,
       showPlot = FALSE
     )
@@ -288,12 +289,12 @@ run_ccm_with_surrogates <- function(df, lib_col, tar_col, E, lib_str, n_samp, n_
     tryCatch({
       ccm_out <- CCM(
         dataFrame = df_surr,
-        E = E, 
-        columns = lib_col, 
+        E = E,
+        columns = lib_col,
         target = tar_col,
         libSizes = lib_str,
         sample = 10,
-        random = TRUE, 
+        random = TRUE,
         showPlot = FALSE
       )
       ccm_out %>%
@@ -332,8 +333,8 @@ if (!is.null(res_A_cause_B) && !is.null(res_B_cause_A)) {
   
   # Plot CCM
   p_ccm <- ggplot(dat.plot.ccm, aes(x = LibSize, y = Rho)) +
-    geom_line(data = filter(dat.plot.ccm, Class == 'Null 95%'), aes(linetype = Class), color = 'grey50', linewidth = 0.8) +
-    geom_line(data = filter(dat.plot.ccm, Class == 'Observed'), aes(color = Direction), linewidth = 1.2) +
+    geom_line(data = filter(dat.plot.ccm, Class == 'Null 95%'), aes(linetype = Class), color = 'grey50', linewidth = 0.4) +
+    geom_line(data = filter(dat.plot.ccm, Class == 'Observed'), aes(color = Direction), linewidth = 0.5) +
     facet_wrap(~Direction) +
     scale_color_manual(values = c('Flu A causes Flu B' = '#CC79A7', 'Flu B causes Flu A' = '#56B4E9')) +
     scale_linetype_manual(values = c('Null 95%' = 'dashed'), name = '') +
@@ -344,12 +345,13 @@ if (!is.null(res_A_cause_B) && !is.null(res_B_cause_A)) {
     theme(
       legend.position = 'inside', 
       legend.position.inside = c(0.80, 0.25),
+      legend.background = element_blank(),
       strip.background = element_blank(),
-      strip.text = element_text(face = 'bold', size = base.size * 0.9, family = base.family, color = base.col),
-      axis.text = element_text(size = base.size * 0.9, family = base.family, color = base.col),
-      axis.title.y = element_text(size = base.size * 0.9, family = base.family, color = base.col, face = 'bold'),
-      axis.title.x = element_text(size = base.size * 0.9, family = base.family, color = base.col, face = 'bold', margin = margin(t = 5)),
-      plot.subtitle = element_text(size = base.size * 0.9, family = base.family, color = base.col)
+      strip.text = element_text(face = 'bold', size = base.size, family = base.family, color = base.col),
+      axis.text = element_text(size = base.size, family = base.family, color = base.col),
+      axis.title.y = element_text(size = base.size, family = base.family, color = base.col, face = 'bold'),
+      axis.title.x = element_text(size = base.size, family = base.family, color = base.col, face = 'bold', margin = margin(t = 5)),
+      plot.subtitle = element_text(size = base.size, family = base.family, color = base.col)
     ); p_ccm
 } else {
   cat('CCM Analysis failed due to data issues.\n')
@@ -376,13 +378,30 @@ granger_res <- data.frame(
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Plotting Granger Causality Test
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+format_p_exact <- function(p) {
+  vapply(p, function(x) {
+    if (is.na(x)) return(NA_character_)
+    if (x < .Machine$double.eps) {
+      return(sprintf('&lt; 2.220 × 10<sup>%d</sup>', floor(log10(.Machine$double.eps))))
+    }
+    if (x >= 0.001) {
+      return(formatC(x, format = 'f', digits = 3))
+    }
+    exponent <- floor(log10(x))
+    sprintf('%.3f × 10<sup>%d</sup>', x / 10^exponent, exponent)
+  }, character(1))
+}
+
 add_sig <- function(df) {
-  df %>% mutate(Sig = case_when(
-    P_val < 0.001 ~ '***',
-    P_val < 0.01 ~ '**',
-    P_val < 0.05 ~ '*',
-    TRUE ~ 'NS'
-  ))
+  df %>% mutate(
+    Sig = case_when(
+      P_val < 0.001 ~ '***',
+      P_val < 0.01 ~ '**',
+      P_val < 0.05 ~ '*',
+      TRUE ~ 'NS'
+    ),
+    P_label = glue('*P* = {format_p_exact(P_val)}')
+  )
 }
 
 granger_res <- add_sig(granger_res)
@@ -391,7 +410,7 @@ mm <- round(max(granger_res$Stat) * 1.2, 1)
 # Linear Granger
 p_granger <- ggplot(granger_res, aes(x = Direction, y = Stat, fill = Direction)) +
   geom_bar(stat = 'identity', width = 0.6, alpha = 0.8) +
-  geom_text(aes(label = Sig, y = Stat), vjust = -0.5, size = base.size / 4.5, fontface = 'bold', family = base.family) +
+  geom_richtext(aes(label = P_label, y = Stat), vjust = -0.5, size = base.size / ggplot2::.pt * 0.8, color = '#000000', fill = NA, label.color = NA, label.padding = unit(0, 'lines')) +
   scale_fill_manual(values = c('Flu A -> Flu B' = '#CC79A7', 'Flu B -> Flu A' = '#56B4E9')) +
   scale_x_discrete(labels = c('A to B', 'B to A')) +
   scale_y_continuous(limits = c(0, mm), expand = c(0, 0)) +
@@ -399,10 +418,10 @@ p_granger <- ggplot(granger_res, aes(x = Direction, y = Stat, fill = Direction))
   theme_classic(base_size = base.size, base_family = base.family) +
   theme(
     legend.position = 'none',
-    plot.subtitle = element_text(size = base.size * 0.9, family = base.family, color = base.col),
-    axis.text = element_text(size = base.size * 0.9, family = base.family, color = base.col),
-    axis.title.y = element_text(size = base.size * 0.9, family = base.family, color = base.col, face = 'bold'),
-    axis.title.x = element_text(size = base.size * 0.9, family = base.family, color = base.col, face = 'bold', margin = margin(t = 5))
+    plot.subtitle = element_text(size = base.size, family = base.family, color = base.col),
+    axis.text = element_text(size = base.size, family = base.family, color = base.col),
+    axis.title.y = element_text(size = base.size, family = base.family, color = base.col, face = 'bold'),
+    axis.title.x = element_text(size = base.size, family = base.family, color = base.col, face = 'bold', margin = margin(t = 5))
   ); p_granger
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -439,7 +458,7 @@ run_gam_granger <- function(data, target, cause, lags = 1:2) {
   model_full <- gam(f_full, data = data, method = "REML", family = tw(link = "log"))
   
   test_res <- anova(model_null, model_full, test = "F")
-
+  
   p_value <- test_res$`Pr(>Chi)`[2]
   dev_diff <- test_res$Deviance[2]
   is_sig <- ifelse(p_value < 0.05, "Significant", "Not Significant")
@@ -467,12 +486,12 @@ ngranger_res <- data.frame(
 )
 
 ngranger_res <- add_sig(ngranger_res)
-mm <- round(max(ngranger_res$Stat) * 1.2, 1)
+mm <- round(max(ngranger_res$Stat) * 1.4, 1)
 
 # Non-linear Granger
 p_ngranger <- ggplot(ngranger_res, aes(x = Direction, y = Stat, fill = Direction)) +
   geom_bar(stat = 'identity', width = 0.6, alpha = 0.8) +
-  geom_text(aes(label = Sig, y = Stat), vjust = -0.5, size = base.size / 4.5, fontface = 'bold', family = base.family) +
+  geom_richtext(aes(label = P_label, y = Stat), vjust = -0.5, size = base.size / ggplot2::.pt * 0.8, color = '#000000', fill = NA, label.color = NA, label.padding = unit(0, 'lines')) +
   scale_fill_manual(values = c('Flu A -> Flu B' = '#CC79A7', 'Flu B -> Flu A' = '#56B4E9')) +
   scale_x_discrete(labels = c('A to B', 'B to A')) +
   scale_y_continuous(limits = c(0, mm), expand = c(0, 0)) +
@@ -480,10 +499,10 @@ p_ngranger <- ggplot(ngranger_res, aes(x = Direction, y = Stat, fill = Direction
   theme_classic(base_size = base.size, base_family = base.family) +
   theme(
     legend.position = 'none',
-    plot.subtitle = element_text(size = base.size * 0.9, family = base.family, color = base.col),
-    axis.text = element_text(size = base.size * 0.9, family = base.family, color = base.col),
-    axis.title.y = element_text(size = base.size * 0.9, family = base.family, color = base.col, face = 'bold'),
-    axis.title.x = element_text(size = base.size * 0.9, family = base.family, color = base.col, face = 'bold', margin = margin(t = 5))
+    plot.subtitle = element_text(size = base.size, family = base.family, color = base.col),
+    axis.text = element_text(size = base.size, family = base.family, color = base.col),
+    axis.title.y = element_text(size = base.size, family = base.family, color = base.col, face = 'bold'),
+    axis.title.x = element_text(size = base.size, family = base.family, color = base.col, face = 'bold', margin = margin(t = 5))
   ); p_ngranger
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -525,7 +544,7 @@ dat.dlnm <- data.frame(
 p_dlnm <- ggplot(dat.dlnm, aes(x = Lag, y = RR)) +
   geom_hline(yintercept = 1, linetype = 'dashed', color = 'grey40') +
   geom_ribbon(aes(ymin = Lower, ymax = Upper), fill = '#E74C3C', alpha = 0.2) +
-  geom_line(color = '#C0392B', linewidth = 1) +
+  geom_line(color = '#C0392B', linewidth = 0.5) +
   scale_x_continuous(breaks = 0:lag.w) +
   labs(
     subtitle = glue('Lagged Effect of Flu A on Flu B'), 
@@ -534,10 +553,10 @@ p_dlnm <- ggplot(dat.dlnm, aes(x = Lag, y = RR)) +
   ) +
   theme_classic(base_size = base.size, base_family = base.family) +
   theme(
-    plot.subtitle = element_text(size = base.size * 0.9, family = base.family, color = base.col),
-    axis.text = element_text(size = base.size * 0.9, family = base.family, color = base.col),
-    axis.title.y = element_text(size = base.size * 0.9, family = base.family, color = base.col, face = 'bold'),
-    axis.title.x = element_text(size = base.size * 0.9, family = base.family, color = base.col, face = 'bold', margin = margin(t = 5))
+    plot.subtitle = element_text(size = base.size, family = base.family, color = base.col),
+    axis.text = element_text(size = base.size, family = base.family, color = base.col),
+    axis.title.y = element_text(size = base.size, family = base.family, color = base.col, face = 'bold'),
+    axis.title.x = element_text(size = base.size, family = base.family, color = base.col, face = 'bold', margin = margin(t = 5))
   )
 
 print(p_dlnm)
@@ -549,8 +568,8 @@ if (exists('p_ccm') && exists('p_dlnm') && exists('p_sens') && exists('p_granger
   
   # Layout Design:
   design <- '
-  AABBB
-  CCEEE
+  AAABBB
+  CCCEEE
   '
   gg <- p_sens + p_dlnm + (p_granger + p_ngranger) + p_ccm + 
     plot_layout(design = design, heights = c(0.8, 1))
@@ -562,9 +581,52 @@ if (exists('p_ccm') && exists('p_dlnm') && exists('p_sens') && exists('p_granger
 }
 
 # Save to file
-width = 12; height = 9
-ggsave(gg, filename = glue('{fig.dir}/{ofig}_{this}.pdf'), width = width, height = height, units = 'in', bg = '#FFFFFF')
+ggsave(gg, filename = glue('{fig.dir}/{ofig}_{this}.pdf'), width = 180, height = 90, units = 'mm', device = cairo_pdf, bg = '#FFFFFF')
 
 end.time <- Sys.time()
 run.time <- end.time - start.time
 print(run.time)
+
+# ------------------------------------------------------------------------------
+# Export Source Data
+# ------------------------------------------------------------------------------
+source.dir <- glue('{rt.dir}/Source data')
+if (this == 'HK') {
+  fig.label <- 'Fig.S21'
+} else {
+  fig.label <- 'Fig.5'
+}
+
+write_source_txt <- function(df, panel, title) {
+  con <- file(glue('{source.dir}/{fig.label}{panel}.txt'), open = 'wt', encoding = 'UTF-8')
+  writeLines(c(
+    glue('Source data for {fig.label}{panel}: {title}')
+  ), con)
+  write.table(df, file = con, sep = '\t', row.names = FALSE, quote = FALSE, na = '')
+  close(con)
+}
+
+write_source_txt(
+  sens_results, panel = 'A',
+  title = 'Sensitivity of cross map skill (rho) to embedding dimension E'
+)
+
+write_source_txt(
+  dat.dlnm, panel = 'B',
+  title = 'Lagged effect of influenza A on influenza B (DLNM)'
+)
+
+write_source_txt(
+  granger_res, panel = 'C',
+  title = 'Linear Granger causality test between Flu A and Flu B'
+)
+
+write_source_txt(
+  ngranger_res, panel = 'D',
+  title = 'Non-linear (GAM-based) Granger causality test between Flu A and Flu B'
+)
+
+write_source_txt(
+  dat.plot.ccm, panel = 'E',
+  title = 'Convergent cross mapping (CCM) causality test, Flu A versus Flu B'
+)

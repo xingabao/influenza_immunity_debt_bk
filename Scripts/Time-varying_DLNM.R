@@ -14,10 +14,10 @@ fig.dir <- glue('{rt.dir}/Figures')
 tbl.dir <- glue('{rt.dir}/Tables')
 ofig <- tools::file_path_sans_ext(basename(basename(this.path::this.path())))
 this <- 'Macau'   # Options: 'HK' or 'Macau'
-base.size <- 16
-base.family <- 'serif'
+base.size <- 7
+base.family <- 'sans'
 base.col <- '#000000'
-
+mm <- function(x) x / 25.4
 # Load data
 file.path <- glue('{dat.dir}/{this}/FLU-CL-AQ.xlsx')
 
@@ -366,8 +366,8 @@ for (target in target.list) {
   
   # Visualization: Observed vs Counterfactual
   p_oos <- ggplot(oos_res, aes(x = date)) +
-    geom_line(aes(y = Observed, color = 'Observed'), linewidth = 0.8, alpha = 0.8) +
-    geom_line(aes(y = Predicted, color = 'Counterfactual'), linewidth = 0.8, linetype = 'dashed') +
+    geom_line(aes(y = Observed, color = 'Observed'), linewidth = 0.5, alpha = 0.8) +
+    geom_line(aes(y = Predicted, color = 'Counterfactual'), linewidth = 0.5, linetype = 'dashed') +
     scale_color_manual(values = c('Observed' = '#CC79A7', 'Counterfactual' = '#56B4E9')) +
     scale_y_continuous(limits = c(0, max(oos_res$Predicted, oos_res$Observed) * 1.2), expand = c(0, 0)) +
     scale_x_date(
@@ -382,19 +382,20 @@ for (target in target.list) {
     theme_classic(base_size = base.size, base_family = base.family) +
     theme(
       legend.position = 'inside',
-      legend.position.inside = c(0.8, 0.9),
-      legend.text = element_text(size = base.size * 0.9, family = base.family, color = base.col),
-      plot.subtitle = element_text(size = base.size * 0.9, family = base.family, color = base.col),
+      legend.position.inside = c(0.8, 0.8),
+      legend.key.spacing.y = unit(-0.25, units = 'cm'),
+      legend.text = element_text(size = base.size, family = base.family, color = base.col),
+      plot.subtitle = element_text(size = base.size, family = base.family, color = base.col),
       panel.grid = element_blank(),
-      axis.text.x = element_text(color = 'black', size = base.size * 0.9, margin = margin(t = 5), family = base.family),
-      axis.text.y = element_text(color = 'black', size = base.size * 0.9, family = base.family),
-      axis.title.y = element_text(size = base.size * 0.9, face = 'bold', margin = margin(r = 10), family = base.family),
+      axis.text.x = element_text(color = 'black', size = base.size, margin = margin(t = 5), family = base.family),
+      axis.text.y = element_text(color = 'black', size = base.size, family = base.family),
+      axis.title.y = element_text(size = base.size, face = 'bold', margin = margin(r = 10), family = base.family),
       axis.title.x = element_blank(),
       axis.line = element_line(linewidth = 0.6),
       axis.ticks = element_line(linewidth = 0.6, color = 'black')
     ); p_oos
   
-  ggsave(glue('{fig.dir}/{ofig}_{meteo.main}_oos_{target}_{this}.pdf'), p_oos, width = 6, height = 3)
+  ggsave(glue('{fig.dir}/{ofig}_{meteo.main}_oos_{target}_{this}.pdf'), p_oos, width = mm(90), height = mm(40))
 }
 
 # ==============================================================================
@@ -408,12 +409,12 @@ write.csv(final_eff_df, glue('{tbl.dir}/{ofig}_{meteo.main}_effects_{this}.csv')
 
 # Generate Dumbbell Plot: Comparison of RR at cold temperatures
 p_dumbbell_all <- ggplot(final_eff_df) +
-  geom_segment(aes(x = RR_pre, xend = RR_post, y = Virus, yend = Virus), color = 'grey70', size = 1.5) +
-  geom_point(aes(x = RR_pre, y = Virus, color = 'Pre-Pandemic'), size = 5) +
-  geom_point(aes(x = RR_post, y = Virus, color = 'Post-Pandemic'), size = 5) +
+  geom_segment(aes(x = RR_pre, xend = RR_post, y = Virus, yend = Virus), color = 'grey70', size = 1.0) +
+  geom_point(aes(x = RR_pre, y = Virus, color = 'Pre-Pandemic'), size = 2.0) +
+  geom_point(aes(x = RR_post, y = Virus, color = 'Post-Pandemic'), size = 2.0) +
   geom_vline(xintercept = 1, linetype = 'dashed', color = 'black', alpha = 0.3) +
-  geom_text(aes(x = RR_pre, y = Virus, label = sprintf('%.3f', RR_pre)), vjust = 2.5, color = '#56B4E9', fontface = 'bold', size = base.size / 3.88,  family = base.family) +
-  geom_text(aes(x = RR_post, y = Virus, label = sprintf('%.3f', RR_post)), vjust = 2.5, color = '#CC79A7', fontface = 'bold', size = base.size / 3.88, family = base.family) +
+  geom_text(aes(x = RR_pre, y = Virus, label = sprintf('%.3f', RR_pre)), vjust = 2.5, color = '#56B4E9', fontface = 'bold', size = base.size / ggplot2::.pt,  family = base.family) +
+  geom_text(aes(x = RR_post, y = Virus, label = sprintf('%.3f', RR_post)), vjust = 2.5, color = '#CC79A7', fontface = 'bold', size = base.size / ggplot2::.pt, family = base.family) +
   scale_color_manual(values = c('Pre-Pandemic' = '#56B4E9', 'Post-Pandemic' = '#CC79A7')) +
   scale_y_discrete(labels = c('FLUA' = 'Influenza A', 'FLUB' = 'Influenza B')) +
   scale_x_continuous(expand = c(0.05, 0.02)) +
@@ -424,20 +425,23 @@ p_dumbbell_all <- ggplot(final_eff_df) +
   theme_classic(base_size = base.size, base_family = base.family) +
   theme(
     legend.position = 'inside',
-    legend.position.inside = c(ifelse(this == 'HK', 0.80, 0.25), 0.8),
+    legend.position.inside = c(ifelse(this == 'HK', 0.80, 0.26), 0.8),
     legend.title = element_blank(),
-    legend.text = element_text(size = base.size * 0.9, family = base.family, color = base.col),
-    plot.subtitle = element_text(size = base.size * 0.9, family = base.family, color = base.col),
+    legend.text = element_text(size = base.size, family = base.family, color = base.col),
+    legend.key.spacing.y = unit(0.1, units = 'cm'),
+    legend.key.height = unit(0.25, units = 'cm'),
+    legend.background = element_blank(),
+    plot.subtitle = element_text(size = base.size, family = base.family, color = base.col),
     panel.grid = element_blank(),
-    axis.text.x = element_text(color = 'black', size = base.size * 0.9, margin = margin(t = 5), family = base.family),
-    axis.text.y = element_text(color = 'black', size = base.size * 0.9, family = base.family, angle = 90, hjust = 0.5),
-    axis.title.y = element_text(size = base.size * 0.9, face = 'bold', margin = margin(r = 10), family = base.family),
+    axis.text.x = element_text(color = 'black', size = base.size, margin = margin(t = 2), family = base.family),
+    axis.text.y = element_text(color = 'black', size = base.size, family = base.family, angle = 90, hjust = 0.5),
+    axis.title.y = element_text(size = base.size, face = 'bold', margin = margin(r = 10), family = base.family),
     axis.title.x = element_blank(),
     axis.line = element_line(linewidth = 0.6),
     axis.ticks = element_line(linewidth = 0.6, color = 'black')
   ); p_dumbbell_all
 
-ggsave(glue('{fig.dir}/{ofig}_{meteo.main}_dumbbell_{this}.pdf'), p_dumbbell_all, width = 4.5, height = 4)
+ggsave(glue('{fig.dir}/{ofig}_{meteo.main}_dumbbell_{this}.pdf'), p_dumbbell_all, width = 67, height = 45, units = 'mm')
 
 # ==============================================================================
 # Section 7: Sensitivity Analysis (Lag Structure)
@@ -483,8 +487,8 @@ if (FALSE) write.csv(df_qaic_all, glue('{tbl.dir}/{ofig}_{meteo.main}_QAIC_sensi
 # Visualization: Robustness of RR Ratio across lags
 p_sens_all <- ggplot(df_sens_all, aes(x = factor(Lag), y = RR_ratio_post_vs_pre, group = Virus, color = Virus)) +
   geom_hline(yintercept = 1, linetype = 'dashed', color = 'grey50') +
-  geom_line(size = 1) +
-  geom_point(size = 3) +
+  geom_line(size = 0.5) +
+  geom_point(size = 1.5) +
   scale_color_manual(values = c('FLUA' = '#CC79A7', 'FLUB' = '#56B4E9'), labels = c('FLUA' = 'Influenza A', 'FLUB' = 'Influenza B')) +
   scale_y_continuous(limits = c(0, 2), breaks = c(0, 0.5, 1, 1.5, 2), labels = c('0', '0.5', '1.0', '1.5', '2.0'), expand = c(0, 0)) +
   scale_x_discrete(expand = c(0.1, 0.1)) +
@@ -497,17 +501,53 @@ p_sens_all <- ggplot(df_sens_all, aes(x = factor(Lag), y = RR_ratio_post_vs_pre,
   theme_classic(base_size = base.size, base_family = base.family) +
   theme(
     legend.position = 'inside',
-    legend.position.inside = c(0.8, 0.8),
-    legend.text = element_text(size = base.size * 0.9, family = base.family, color = base.col),
+    legend.position.inside = c(0.70, 0.8),
+    legend.text = element_text(size = base.size, family = base.family, color = base.col),
     legend.title = element_blank(),
-    plot.subtitle = element_text(size = base.size * 0.9, family = base.family, color = base.col),
+    legend.key.spacing.y = unit(0.1, units = 'cm'),
+    legend.key.height = unit(0.25, units = 'cm'),
+    plot.subtitle = element_text(size = base.size, family = base.family, color = base.col),
     panel.grid = element_blank(),
-    axis.text.x = element_text(color = 'black', size = base.size * 0.9, margin = margin(t = 5), family = base.family),
-    axis.text.y = element_text(color = 'black', size = base.size * 0.9, family = base.family, angle = 90, hjust = 0.5),
-    axis.title.y = element_text(size = base.size * 0.9, face = 'bold', margin = margin(r = 10), family = base.family),
+    axis.text.x = element_text(color = 'black', size = base.size, margin = margin(t = 2), family = base.family),
+    axis.text.y = element_text(color = 'black', size = base.size, family = base.family, angle = 90, hjust = 0.5),
+    axis.title.y = element_text(size = base.size, face = 'bold', margin = margin(r = 10), family = base.family),
     axis.title.x = element_blank(),
     axis.line = element_line(size = 0.6),
     axis.ticks = element_line(size = 0.6, color = 'black')
   ); p_sens_all
 
-ggsave(glue('{fig.dir}/{ofig}_{meteo.main}_sensitivity_{this}.pdf'), p_sens_all, width = 4, height = 4)
+ggsave(glue('{fig.dir}/{ofig}_{meteo.main}_sensitivity_{this}.pdf'), p_sens_all, width = 60, height = 45, units = 'mm')
+
+# ------------------------------------------------------------------------------
+# Export Source Data
+# ------------------------------------------------------------------------------
+source.dir <- glue('{rt.dir}/Source data')
+if (this == 'HK') {
+  fig.label <- 'Fig.S20'
+} else {
+  fig.label <- 'Fig.4'
+}
+
+write_source_txt <- function(df, panel, title) {
+  con <- file(glue('{source.dir}/{fig.label}{panel}.txt'), open = 'wt', encoding = 'UTF-8')
+  writeLines(c(
+    glue('Source data for {fig.label}{panel}: {title}')
+  ), con)
+  write.table(df, file = con, sep = '\t', row.names = FALSE, quote = FALSE, na = '')
+  close(con)
+}
+
+write_source_txt(
+  final_eff_df, panel = 'D',
+  title = 'Cumulative relative risk at cold temperature (10th percentile) versus warm reference (90th percentile), pre- versus post-pandemic, with ratio of RRs, Wald and LRT P values (time-stratified DLNM with step-change interaction)'
+)
+
+write_source_txt(
+  df_sens_all, panel = 'E',
+  title = 'Sensitivity of the Post/Pre RR ratio to maximum lag window (3-11 weeks) for influenza A and B'
+)
+
+write_source_txt(
+  bind_rows(all_oos_list), panel = 'F,G',
+  title = 'Out-of-sample counterfactual prediction: observed weekly influenza positivity versus prediction from pre-pandemic-trained model, post-2023 period'
+)

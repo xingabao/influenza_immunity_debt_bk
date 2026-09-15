@@ -15,9 +15,10 @@ fig.dir <- glue('{rt.dir}/Figures')
 tbl.dir <- glue('{rt.dir}/Tables')
 ofig <- tools::file_path_sans_ext(basename(basename(this.path::this.path())))
 this <- 'Macau'  # Options: 'HK' or 'Macau'
-base.size <- 16
-base.family <- 'serif'
+base.size <- 7
+base.family <- 'sans'
 base.col <- '#000000'
+mm <- function(x) x / 25.4
 
 # Load data
 dat.raw <- readxl::read_excel(glue('{dat.dir}/{this}/FLU-CL-AQ.xlsx'))
@@ -125,10 +126,10 @@ net.args <- list(
   color = c('#00A08731', '#FF990033', '#E5091432'), 
   borders = FALSE,
   shape = 'ellipse',
-  vsize = 13,
-  vsize2 = 6,
+  vsize = 6,
+  vsize2 = 4,
   details = FALSE,
-  label.cex = 1.1,
+  label.cex = 0.6,
   label.scale = FALSE,
   legend = FALSE,
   label.color = 'black',
@@ -140,11 +141,11 @@ net.args <- list(
   title = NULL
 )
 
-pdf(glue('{fig.dir}/{ofig}_{this}_pre.pdf'), width = 6, height = 6, family = 'serif', bg = '#FFFFFF')
+pdf(glue('{fig.dir}/{ofig}_{this}_pre.pdf'), width = mm(90), height = mm(90), family = base.family, bg = '#FFFFFF')
 do.call(qgraph, c(list(input = nw.pre$graph), net.args))
 dev.off()
 
-pdf(glue('{fig.dir}/{ofig}_{this}_post.pdf'), width = 6, height = 6, family = 'serif', bg = '#FFFFFF')
+pdf(glue('{fig.dir}/{ofig}_{this}_post.pdf'), width = mm(90), height = mm(90), family = base.family, bg = '#FFFFFF')
 do.call(qgraph, c(list(input = nw.post$graph), net.args))
 dev.off()
 
@@ -217,14 +218,42 @@ gg <- ggplot(res_df, aes(x = Virus, y = BridgeStrength, fill = Scenario)) +
     legend.position.inside = c(0.35, 0.88),
     legend.background = element_rect(fill = '#FFFFFF44'),
     legend.title = element_blank(),
-    legend.text = element_text(size = base.size * 0.9, family = base.family, color = base.col),
-    axis.title.y.left = element_text(size = base.size * 0.9, family = base.family, color = base.col, face = 'bold', margin = margin(r = 5)),
-    axis.title.x.bottom = element_text(size = base.size * 0.9, family = base.family, color = base.col, face = 'bold', margin = margin(t = 5)),
-    axis.text = element_text(size = base.size * 0.9, family = base.family, color = base.col),
-    plot.subtitle = element_text(size = base.size * 0.9, family = base.family, color = base.col)
+    legend.text = element_text(size = base.size, family = base.family, color = base.col),
+    legend.key.size = unit(3, 'mm'),
+    axis.title.y.left = element_text(size = base.size, family = base.family, color = base.col, face = 'bold', margin = margin(r = 5)),
+    axis.title.x.bottom = element_text(size = base.size, family = base.family, color = base.col, face = 'bold', margin = margin(t = 5)),
+    axis.text = element_text(size = base.size, family = base.family, color = base.col),
+    plot.subtitle = element_text(size = base.size, family = base.family, color = base.col)
   )
 
 print(gg)
 
 # Save to file
-ggsave(filename = glue('{fig.dir}/{ofig}_{this}.pdf'), plot = gg, width = 3.5, height = 4, units = 'in')
+ggsave(filename = glue('{fig.dir}/{ofig}_{this}.pdf'), plot = gg, width = 53, height = 45, units = 'mm')
+
+# ------------------------------------------------------------------------------
+# Export Source Data
+# ------------------------------------------------------------------------------
+source.dir <- glue('{rt.dir}/Source data')
+if (this == 'HK') {
+  fig.label <- 'Fig.S20'
+} else {
+  fig.label <- 'Fig.4'
+}
+
+write_source_txt <- function(df, panel, title) {
+  con <- file(glue('{source.dir}/{fig.label}{panel}.txt'), open = 'wt', encoding = 'UTF-8')
+  writeLines(c(
+    glue('Source data for {fig.label}{panel}: {title}')
+  ), con)
+  write.table(df, file = con, sep = '\t', row.names = FALSE, quote = FALSE, na = '')
+  close(con)
+}
+
+saveRDS(nw.pre,  file = glue('{source.dir}/{fig.label}A.rds'))
+saveRDS(nw.post, file = glue('{source.dir}/{fig.label}B.rds'))
+
+write_source_txt(
+  res_df, panel = 'C',
+  title = 'Bridge strength centrality between influenza nodes (A, B) and the environmental cluster, pre- versus post-pandemic'
+)

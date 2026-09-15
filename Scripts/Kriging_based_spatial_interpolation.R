@@ -13,8 +13,8 @@ dat.dir <- glue('{rt.dir}/data')
 fig.dir <- glue('{rt.dir}/Figures')
 tbl.dir <- glue('{rt.dir}/Tables')
 ofig <- tools::file_path_sans_ext(basename(basename(this.path::this.path())))
-base.size <- 18
-base.family <- 'serif'
+base.size <- 7
+base.family <- 'sans'
 base.col <- '#000000'
 
 # Load data
@@ -170,10 +170,10 @@ plot.gg <- function(dat, flu.type, time.type) {
   map.grid <- base::expand.grid(
     longitude = seq(
       from = map.box[1] * (1 - ex.),
-      to = map.box[3] * (1 + ex.), length.out = 500),
+      to = map.box[3] * (1 + ex.), length.out = 300),
     latitude = seq(
       from = map.box[2] * (1 - ex.), 
-      to = map.box[4] * (1 + ex.), length.out = 500)
+      to = map.box[4] * (1 + ex.), length.out = 300)
   )
   
   # Convert to spatial points grid in sp format
@@ -207,8 +207,8 @@ plot.gg <- function(dat, flu.type, time.type) {
   # Plot Kriging interpolation heatmap
   gg <- ggplot() +
     ggplot2::geom_sf(data = krige.dat.sf, mapping = aes(color = value)) +
-    ggplot2::geom_sf(data = MACAU, fill = 'NA', colour = '#666666', linewidth = 0.10) +
-    ggplot2::geom_sf(data = dat.sf, shape = 1, size = 3, color = '#666666') +
+    ggplot2::geom_sf(data = MACAU, fill = 'NA', colour = '#666666', linewidth = 0.05) +
+    ggplot2::geom_sf(data = dat.sf, shape = 1, size = 0.75, color = '#666666') +
     scale_x_continuous(expand = c(0, 0), breaks = seq(min(krige.dat$Longitude), max(krige.dat$Longitude), length.out = 5)) +
     scale_y_continuous(expand = c(0, 0)) +
     scale_color_gradientn(
@@ -218,7 +218,7 @@ plot.gg <- function(dat, flu.type, time.type) {
       limits = c(0, 1.5)
     ) +
     coord_sf(clip = 'off') + 
-    guides(color = guide_colorbar(title = NULL, title.position = "top", label.position = "bottom", title.hjust = 0.5, barwidth = 30)) +
+    guides(color = guide_colorbar(title = NULL, title.position = "top", label.position = "bottom", title.hjust = 0.5, barwidth = unit(70, 'mm'), barheight = unit(2, 'mm'))) +
     theme(
       axis.title = element_blank(),
       axis.text = element_blank(),
@@ -235,13 +235,51 @@ plot.gg <- function(dat, flu.type, time.type) {
       legend.key.width  = unit(.6, units = 'in'),
       legend.key.size = unit(.6, units = 'in'),
       legend.frame = element_rect(color = '#FFFFFF'),
-      legend.ticks = element_line(color = '#FFFFFF', linewidth = 2),
+      legend.ticks = element_line(color = '#FFFFFF', linewidth = 0.5),
     )
   
-  if (flu.type == 'AB' & time.type == 'pos') {
-    gg  +
-      annotation_north_arrow(style = north_arrow_nautical(text_size = base.size, text_family = base.family, text_col = base.col), location = 'tr', pad_x = unit(-0.50, 'cm')) +
-      annotation_scale(location = 'br', text_cex = base.size / 12, text_family = base.family, line_width = 1.5, pad_x = unit(-0.50, 'cm'))
+  if (flu.type == 'AB' && time.type == 'pos') {
+    gg +
+      scale_x_continuous(
+        expand = c(0, 0),
+        breaks = pretty(c(min(krige.dat$Longitude), max(krige.dat$Longitude)), n = 2),
+        labels = function(x) sprintf('%.2f°E', x)
+      ) +
+      scale_y_continuous(
+        expand = c(0, 0),
+        breaks = pretty(c(min(krige.dat$Latitude), max(krige.dat$Latitude)), n = 3),
+        labels = function(x) sprintf('%.2f°N', x)
+      ) +
+      theme(
+        axis.text.x  = element_text(family = base.family, color = base.col, size = base.size * 0.8, margin = margin(t = 1)),
+        axis.text.y  = element_text(family = base.family, color = base.col, size = base.size * 0.8, margin = margin(r = 1), angle = 90, vjust = 0.5, hjust = 0.5),
+        axis.ticks   = element_line(color = base.col, linewidth = 0.25),
+        axis.ticks.length = unit(0.5, 'mm'),
+        plot.margin  = margin(2, 2, 2, 2)
+      ) +
+      annotation_north_arrow(
+        style = north_arrow_nautical(
+          text_size   = 7,
+          text_family = base.family,
+          text_col    = base.col,
+          line_width  = 0.4
+        ),
+        location = 'tr',
+        height = unit(6, 'mm'),
+        width  = unit(6, 'mm'),
+        pad_x = unit(-1.5, 'mm'),
+        pad_y = unit(1.5, 'mm')
+      ) +
+      annotation_scale(
+        location    = 'br',
+        width_hint  = 0.15,
+        text_cex    = 0.5,
+        text_family = base.family,
+        line_width  = 0.25,
+        height = unit(1.5, "mm"),
+        pad_x = unit(-5.0, 'mm'),
+        pad_y = unit(1.5, 'mm')
+      )
   } else {
     gg
   }
@@ -268,5 +306,26 @@ gg <- wrap_plots(ALL, ncol = 4, guides = "collect") +
   theme(legend.position = "bottom", plot.tag = element_text(family = base.family, color = base.col, size = base.size))
 
 # Save to file
-width = 11; height = 14
-ggsave(gg, filename = glue('{fig.dir}/{ofig}.pdf'), width = width, height = height, bg = '#FFFFFF')
+width = 110; height = 140
+ggsave(gg, filename = glue('{fig.dir}/{ofig}.pdf'), width = width, height = height, units = 'mm', device = cairo_pdf, bg = '#FFFFFF')
+
+
+# ------------------------------------------------------------------------------
+# Export Source Data
+# ------------------------------------------------------------------------------
+source.dir <- glue('{rt.dir}/Source data')
+fig.label <- 'Fig.S1'
+
+write_source_txt <- function(df, panel, title) {
+  con <- file(glue('{source.dir}/{fig.label}{panel}.txt'), open = 'wt', encoding = 'UTF-8')
+  writeLines(c(
+    glue('Source data for {fig.label}{panel}: {title}')
+  ), con)
+  write.table(df, file = con, sep = '\t', row.names = FALSE, quote = FALSE, na = '')
+  close(con)
+}
+
+write_source_txt(
+  epi.dat.merge, panel = 'E,F,G,H,I,J,K,L,M,N,O,P',
+  title = 'District-level influenza positivity rates used as interpolation points for kriging heatmaps, by subtype (A, B, AB) and epidemiological phase (pre-pandemic, acute, transition, post-pandemic)'
+)

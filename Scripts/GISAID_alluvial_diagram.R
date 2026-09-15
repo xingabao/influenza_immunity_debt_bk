@@ -19,8 +19,8 @@ ofig <- tools::file_path_sans_ext(basename(basename(this.path::this.path())))
 these <- c('B', 'H1N1', 'H3N2')
 
 # Plotting Constants
-base.size <- 18
-base.family <- 'serif'
+base.size <- 7
+base.family <- 'sans'
 base.col <- '#000000'
 
 # Load data
@@ -100,7 +100,7 @@ gg <- ggplot(dat.pl, aes(x = Year, y = Freq, alluvium = Group, stratum = Group))
       y = y_pos, 
       label = Group
     ),
-    size = 4.5, 
+    size = base.size / ggplot2::.pt, 
     color = '#000000',
     nudge_x = -0.3,
     direction = 'y',
@@ -123,12 +123,33 @@ gg <- ggplot(dat.pl, aes(x = Year, y = Freq, alluvium = Group, stratum = Group))
     panel.grid = element_blank(),
     axis.text.y = element_blank(), 
     axis.ticks.y = element_blank(),
-    axis.text.x = element_text(size = base.size * 0.9, family = base.family, color = base.col)
+    axis.text.x = element_text(size = base.size, family = base.family, color = base.col)
   )
 
 # Show plot
 print(gg)
 
 # Save to file
-width = 15; height = 4
-ggsave(gg, filename = glue('{fig.dir}/{ofig}.pdf'), width = width, height = height, units = 'in', bg = '#FFFFFF')
+width = 240; height = 75
+ggsave(gg, filename = glue('{fig.dir}/{ofig}.pdf'), width = width, height = height, units = 'mm', device = cairo_pdf, bg = '#FFFFFF')
+
+
+# ------------------------------------------------------------------------------
+# Export Source Data
+# ------------------------------------------------------------------------------
+source.dir <- glue('{rt.dir}/Source data')
+fig.label <- 'Fig.6'
+
+write_source_txt <- function(df, panel, title) {
+  con <- file(glue('{source.dir}/{fig.label}{panel}.txt'), open = 'wt', encoding = 'UTF-8')
+  writeLines(c(
+    glue('Source data for {fig.label}{panel}: {title}')
+  ), con)
+  write.table(df, file = con, sep = '\t', row.names = FALSE, quote = FALSE, na = '')
+  close(con)
+}
+
+write_source_txt(
+  dat.pl, panel = 'D',
+  title = 'Annual relative frequency of influenza lineages (Nextclade clade by subtype) in Hong Kong, 2010-2025'
+)

@@ -12,8 +12,8 @@ dat.dir <- glue('{rt.dir}/data')
 fig.dir <- glue('{rt.dir}/Figures')
 tbl.dir <- glue('{rt.dir}/Tables')
 ofig <- tools::file_path_sans_ext(basename(basename(this.path::this.path())))
-base.size <- 18
-base.family <- 'serif'
+base.size <- 7
+base.family <- 'sans'
 base.col <- '#000000'
 
 # Load data
@@ -132,9 +132,30 @@ gg <- dat %>%
     legend.position.inside = c(0.85, 0.2),
     legend.direction = 'horizontal',
     legend.text = element_text(family = base.family, color = base.col, size = base.size * 0.8),
+    legend.key.spacing.y = unit(0, units = 'cm'),
     legend.background = ggfun::element_roundrect(color = '#636363', linetype = 1)
   )
 
 # Save to file
-width = 10; height = 6
-ggsave(gg, filename = glue('{fig.dir}/{ofig}.pdf'), width = width, height = height, bg = '#FFFFFF')
+width = 100; height = 60
+ggsave(gg, filename = glue('{fig.dir}/{ofig}.pdf'), width = width, height = height, units = 'mm', device = cairo_pdf, bg = '#FFFFFF')
+
+# ------------------------------------------------------------------------------
+# Export Source Data
+# ------------------------------------------------------------------------------
+source.dir <- glue('{rt.dir}/Source data')
+fig.label <- 'Fig.S1'
+
+write_source_txt <- function(df, panel, title) {
+  con <- file(glue('{source.dir}/{fig.label}{panel}.txt'), open = 'wt', encoding = 'UTF-8')
+  writeLines(c(
+    glue('Source data for {fig.label}{panel}: {title}')
+  ), con)
+  write.table(df, file = con, sep = '\t', row.names = FALSE, quote = FALSE, na = '')
+  close(con)
+}
+
+write_source_txt(
+  dat, panel = 'A',
+  title = 'Annual distribution of respiratory specimens by influenza result (Influenza A, Influenza B, Non-Influenza), Kiang Wu Hospital cohort 2010-2025'
+)

@@ -16,8 +16,8 @@ tbl.dir <- glue('{rt.dir}/Tables')
 this    <- 'Macau'
 
 # Plotting constants
-base.size   <- 18
-base.family <- 'serif'
+base.size   <- 7
+base.family <- 'sans'
 base.col    <- '#000000'
 cols <- c(
   'Pre-COVID (Training)' = '#888888', 
@@ -27,10 +27,10 @@ cols <- c(
 
 common_theme <- theme_bw(base_size = base.size, base_family = base.family) +
   theme(
-    plot.subtitle = element_text(size = base.size * 0.9, color = base.col, margin = margin(r = 5)),
-    axis.text.x   = element_text(size = base.size * 0.8, color = base.col),
-    axis.text.y   = element_text(size = base.size * 0.8, color = base.col, angle = 90, hjust = 0.5),
-    axis.title.y  = element_text(size = base.size * 0.9, face = 'bold', margin = margin(r = 5)),
+    plot.subtitle = element_text(size = base.size, color = base.col, margin = margin(r = 5)),
+    axis.text.x   = element_text(size = base.size, color = base.col),
+    axis.text.y   = element_text(size = base.size, color = base.col, angle = 90, hjust = 0.5),
+    axis.title.y  = element_text(size = base.size, face = 'bold', margin = margin(r = 5)),
     plot.margin   = margin(t = 5, b = 5, r = 10, l = 5)
   )
 
@@ -291,7 +291,7 @@ yr_min <- min(all_years)
 gg <- ggplot(df_pA, aes(x = year, y = peak_exc_est)) +
   
   annotate("rect", xmin = 2019.55, xmax = 2022.45, ymin = -Inf, ymax = Inf, fill = col_covid, alpha = 0.07) +
-  annotate("text", x = 2021, y = ymin_A + yr_rng * 0.02, label = "NPI suppression\n(excluded from ceiling)", size = base.size / 5.0, color = 'gray28', family = base.family, hjust = 0.5, lineheight = 0.80) +
+  annotate("text", x = 2021, y = ymin_A + yr_rng * 0.02, label = "NPI suppression\n(excluded from ceiling)", size = base.size / ggplot2::.pt, color = 'gray28', family = base.family, hjust = 0.5, lineheight = 0.80) +
   
   geom_hline(yintercept = cln_pk_975, linetype = 'dashed', color = col_ceil,   linewidth = 0.90) +
   geom_hline(yintercept = cln_pk_50,  linetype = 'dotted', color = col_median, linewidth = 0.65) +
@@ -302,23 +302,23 @@ gg <- ggplot(df_pA, aes(x = year, y = peak_exc_est)) +
   geom_text(
     data = filter(df_pA, label_key),
     aes(y = peak_exc_upr + yr_rng * c(0.020, 0.020, 0.040, 0.020), label = sprintf("%+.1f%%", peak_exc_est * 100)),
-    size = base.size / 4.5, family = base.family, color = '#000000', vjust = 0
+    size = base.size / ggplot2::.pt, family = base.family, color = '#000000', vjust = 0
   ) +
   
   annotate(
     "text", x = yr_min + 0.2, y = cln_pk_975 + yr_rng * 0.050,
     label = "Historical ceiling (97.5th pct of pre-pandemic distribution)",
-    hjust = 0, size = base.size / 4.0, color = col_ceil, family = base.family
+    hjust = 0, size = base.size / ggplot2::.pt, color = col_ceil, family = base.family
   ) +
   annotate(
     "text", x = yr_min + 0.2, y = cln_pk_50 - yr_rng * 0.32,
     label = "Historical median",
-    hjust = 0, size = base.size / 4.0, color = 'gray28', family = base.family
+    hjust = 0, size = base.size / ggplot2::.pt, color = 'gray28', family = base.family
   ) +
   annotate(
     "text", x = 2019, y = filter(df_pA, year == 2019)$peak_exc_upr + yr_rng * 0.13,
     label = "Strong\ndrift year",
-    hjust = 0.5, size = base.size / 4.5, lineheight = 0.82,
+    hjust = 0.5, size = base.size / ggplot2::.pt, lineheight = 0.82,
     color = col_2019, family = base.family, fontface = 'italic'
   ) +
   
@@ -328,7 +328,7 @@ gg <- ggplot(df_pA, aes(x = year, y = peak_exc_est)) +
   common_theme +
   theme(panel.grid.minor = element_blank())
 
-ggsave(gg, filename = glue('{fig.dir}/Magnitude_ceiling_test_{this}.pdf'), width = 11, height = 5, units = 'in', bg = 'white')
+ggsave(gg, filename = glue('{fig.dir}/Magnitude_ceiling_test_{this}.pdf'), width = 180, height = 80, units = 'mm', device = cairo_pdf, bg = 'white')
 message(glue("[Saved] MagnitudeCeilingTest_{this}.pdf"))
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -449,3 +449,23 @@ writexl::write_xlsx(
 )
 
 message("\n[Magnitude Ceiling Test] All done.\n")
+
+# ------------------------------------------------------------------------------
+# Export Source Data
+# ------------------------------------------------------------------------------
+source.dir <- glue('{rt.dir}/Source data')
+fig.label <- 'Fig.S8'
+
+write_source_txt <- function(df, panel, title) {
+  con <- file(glue('{source.dir}/{fig.label}{panel}.txt'), open = 'wt', encoding = 'UTF-8')
+  writeLines(c(
+    glue('Source data for {fig.label}{panel}: {title}')
+  ), con)
+  write.table(df, file = con, sep = '\t', row.names = FALSE, quote = FALSE, na = '')
+  close(con)
+}
+
+write_source_txt(
+  df_pA %>% dplyr::select(-mean_sims, -peak_sims, -breadth_sims), panel = '',
+  title = 'Monte Carlo simulation–based Magnitude Ceiling Test for annual peak influenza excess positivity rates in Macau, 2010–2025'
+)

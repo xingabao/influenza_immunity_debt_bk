@@ -15,11 +15,11 @@ dat.dir <- glue('{rt.dir}/data')
 fig.dir <- glue('{rt.dir}/Figures')
 tbl.dir <- glue('{rt.dir}/Tables')
 ofig <- tools::file_path_sans_ext(basename(basename(this.path::this.path())))
-this <- 'Macau'  # Options: 'HK' or 'Macau'
+this <- 'HK'  # Options: 'HK' or 'Macau'
 
 # Plotting Constants
-base.size <- 18
-base.family <- 'serif'
+base.size <- 7
+base.family <- 'sans'
 base.col <- '#000000'
 cols <- c(
   'Pre-COVID (Training)' = '#888888', 
@@ -184,6 +184,35 @@ target_period <- c('COVID (Suppression)', 'Post-COVID (Rebound)')
 dat.post <- dat.result %>% filter(period %in% target_period) %>% arrange(date)
 df_trend <- data.frame()
 
+# Exact P value formatting: plain text for source data, plotmath for figure labels
+format_p_exact <- function(p) {
+  vapply(p, function(x) {
+    if (is.na(x)) return(NA_character_)
+    if (x < .Machine$double.eps) {
+      return('2.220 × 10^-16')
+    }
+    if (x >= 0.001) {
+      return(formatC(x, format = 'f', digits = 3))
+    }
+    exponent <- floor(log10(x))
+    sprintf('%.3f × 10^%d', x / 10^exponent, exponent)
+  }, character(1))
+}
+
+format_p_plotmath <- function(p) {
+  vapply(p, function(x) {
+    if (is.na(x)) return(NA_character_)
+    if (x < .Machine$double.eps) {
+      return('italic(P) == 2.220 %*% 10^-16')
+    }
+    if (x >= 0.001) {
+      return(sprintf('italic(P) == %s', formatC(x, format = 'f', digits = 3)))
+    }
+    exponent <- floor(log10(x))
+    sprintf('italic(P) == %.3f %*% 10^%d', x / 10^exponent, exponent)
+  }, character(1))
+}
+
 if (nrow(dat.post) > 0) {
   dat.post <- dat.post %>%
     mutate(
@@ -214,8 +243,9 @@ if (nrow(dat.post) > 0) {
       excess_lwr  = ci_diff[1],
       excess_upr  = ci_diff[2],
       p_value     = p_val,
+      p_value_exact = format_p_exact(p_val),
       is_signif   = p_val < 0.05,
-      p_label     = ifelse(p_val < 0.001, 'P < 0.001', sprintf('P = %.3f', p_val))
+      p_label     = format_p_plotmath(p_val)
     )
   }
   df_trend <- do.call(rbind, results_list)
@@ -230,10 +260,10 @@ rects <- dat.result %>%
 
 common_theme <- theme_bw(base_size = base.size, base_family = base.family) +
   theme(
-    plot.subtitle = element_text(size = base.size * 0.9, color = base.col, margin = margin(r = 5)),
-    axis.text.x = element_text(size = base.size * 0.8, color = base.col),
-    axis.text.y = element_text(size = base.size * 0.8, color = base.col, angle = 90, hjust = 0.5),
-    axis.title.y = element_text(size = base.size * 0.9, face = 'bold', margin = margin(r = 5)),
+    plot.subtitle = element_text(size = base.size, color = base.col, margin = margin(r = 5)),
+    axis.text.x = element_text(size = base.size, color = base.col),
+    axis.text.y = element_text(size = base.size, color = base.col, angle = 90, hjust = 0.5),
+    axis.title.y = element_text(size = base.size, face = 'bold', margin = margin(r = 5)),
     plot.margin = margin(t = 5, b = 5, r = 10, l = 5)
   )
 
@@ -241,8 +271,8 @@ common_theme <- theme_bw(base_size = base.size, base_family = base.family) +
 p_ts <- ggplot() +
   geom_rect(data = rects, aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = period), alpha = 0.2, inherit.aes = FALSE) +
   geom_ribbon(data = dat.result, aes(x = date, ymin = ci_lower, ymax = ci_upper), fill = '#00008B', alpha = 0.2) +
-  geom_line(data = dat.result, aes(x = date, y = pred_rate, linetype = 'Counterfactual Baseline'), color = '#00008B', linewidth = 0.8) +
-  geom_line(data = dat.result, aes(x = date, y = obs_rate, linetype = 'Observed Data'), color = 'black', linewidth = 0.6, alpha = 0.8) +
+  geom_line(data = dat.result, aes(x = date, y = pred_rate, linetype = 'Counterfactual Baseline'), color = '#00008B', linewidth = 0.4) +
+  geom_line(data = dat.result, aes(x = date, y = obs_rate, linetype = 'Observed Data'), color = 'black', linewidth = 0.5, alpha = 0.8) +
   scale_fill_manual(values = cols, guide = 'none') +
   scale_linetype_manual(name = NULL, values = c('Observed Data' = 'solid', 'Counterfactual Baseline' = 'dashed')) +
   scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
@@ -254,8 +284,9 @@ p_ts <- ggplot() +
   ) +
   common_theme +
   theme(
-    legend.position = c(0.01, 0.95), 
-    legend.justification = c(0, 1), 
+    legend.position = c(ifelse(test = this == 'Macau', yes = 0.20, no = 0.98), 0.98), 
+    legend.justification = c(1, 1),
+    legend.key.spacing.y = unit(-0.20, units = 'cm'),
     legend.background = element_blank(),
     legend.box.background = element_blank(),
     legend.key = element_blank(),
@@ -267,7 +298,7 @@ p_diff <- ggplot(dat.result, aes(x = date, y = diff_rate)) +
   geom_rect(data = rects, aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf, fill = period), alpha = 0.2, inherit.aes = FALSE) +
   geom_hline(yintercept = 0, color = 'gray30', linewidth = 0.5) +
   geom_col(aes(fill = period, color = period), width = 7, alpha = 0.6) + 
-  geom_smooth(method = 'loess', span = 0.1, color = 'black', se = FALSE, linewidth = 0.8) +
+  geom_smooth(method = 'loess', span = 0.1, color = 'black', se = FALSE, linewidth = 0.5) +
   scale_fill_manual(values = cols, guide = 'none') +
   scale_color_manual(values = cols, guide = 'none') +
   scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
@@ -294,32 +325,29 @@ if (nrow(df_trend) > 0) {
   trend_breaks <- breaks_width("3 months")(range(df_trend$block_start))
   trend_labels <- label_date(format = "%b\n%Y")(trend_breaks)
   trend_labels[length(trend_labels)] <- "" 
+  trend_labels[seq(2, length(trend_labels), by = 2)] <- ""
   
   p_trend <- ggplot(df_trend, aes(x = block_start, y = excess_est)) +
-    
     geom_hline(yintercept = 0, linetype = 'dashed', color = 'gray50') +
     geom_errorbar(aes(ymin = excess_lwr, ymax = excess_upr), width = 20, color = '#E50914') +
     geom_line(color = '#E50914', group = 1, alpha = 0.5) +
     geom_point(aes(size = is_signif, fill = is_signif), shape = 21, color = '#E50914') +
-    
-    geom_text(aes(label = scales::percent(excess_est, 0.1), vjust = ifelse(this == 'HK', -2.5, -3.5)), size = 3.5) +
-    geom_text(data = df_trend %>% filter(p_value < 0.05), aes(label = p_label, y = excess_lwr, vjust = 1.5), size = 3, color = 'gray30', family = base.family) +
-    
+    geom_text(aes(label = scales::percent(excess_est, 0.1), vjust = ifelse(this == 'HK', -2.5, -3.5)), size = base.size / ggplot2::.pt) +
+    geom_text(data = df_trend %>% filter(p_value < 0.05), aes(label = p_label, y = excess_lwr, vjust = 1.5), size = base.size / ggplot2::.pt, color = 'gray30', family = base.family, parse = TRUE) +
     geom_rect(data = data.frame(xmin = -Inf, xmax = as.Date('2023-01-01')), aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf), fill = '#56B4E9', alpha = 0.2, inherit.aes = FALSE) +
     geom_rect(data = data.frame(xmin = as.Date('2023-01-01'), xmax = as.Date('2024-01-01')), aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = 0), fill = c('#141473'), alpha = 0.2, inherit.aes = FALSE) +
     geom_rect(data = data.frame(xmin = as.Date('2023-01-01'), xmax = Inf), aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf), fill = c('#CC79A7'), alpha = 0.2, inherit.aes = FALSE) +
-    
-    scale_size_manual(values = c(`FALSE` = 2, `TRUE` = 4), guide = 'none') +
+    scale_size_manual(values = c(`FALSE` = 1, `TRUE` = 1.5), guide = 'none') +
     scale_fill_manual(values = c(`FALSE` = 'white', `TRUE` = '#E50914'), guide = 'none') +
     scale_y_continuous(labels = scales::percent_format(), expand = expansion(mult = 0.2)) +
-    scale_x_date(limits = as.Date(c('2019-11-15', '2025-08-15')), breaks = trend_breaks, labels = trend_labels, expand = c(0, 0)) +
+    scale_x_date(limits = as.Date(c('2019-10-15', '2025-08-15')), breaks = trend_breaks, labels = trend_labels, expand = c(0, 0)) +
     labs(
       subtitle = 'Trend of immunological debt (3-month intervals)',
       y = 'Mean Excess Rate',
       x = NULL
     ) +
     common_theme + theme(
-      axis.text.x = element_text(size = base.size * 0.8, family = base.family, color = coll)
+      axis.text.x = element_text(size = base.size, family = base.family, color = coll)
     )
 } else {
   p_trend <- ggplot() + theme_void()
@@ -327,14 +355,14 @@ if (nrow(df_trend) > 0) {
 
 if (this == 'HK') {
   p_trend <-  p_trend + 
-    annotate("text", x = as.Date("2023-07-01"), y = -0.15, size = base.size / 3.88, label = "Immune Debt", family = base.family, fontface  = 'bold') +
-    annotate("text", x = as.Date("2021-06-01"), y = 0.04, size = base.size / 3.88, label = "Pandemic Period", family = base.family) +
-    annotate("text", x = as.Date("2024-12-01"), y = -0.20, size = base.size / 3.88, label = "Post-pandemic Period", family = base.family)
+    annotate("text", x = as.Date("2023-07-01"), y = -0.15, size = base.size / ggplot2::.pt, label = "Immune Debt", family = base.family, fontface  = 'bold') +
+    annotate("text", x = as.Date("2021-06-01"), y = 0.04, size = base.size / ggplot2::.pt, label = "Pandemic Period", family = base.family) +
+    annotate("text", x = as.Date("2024-12-01"), y = -0.20, size = base.size / ggplot2::.pt, label = "Post-pandemic Period", family = base.family)
 } else {
   p_trend <-  p_trend + 
-    annotate("text", x = as.Date("2023-07-01"), y = -0.10, size = base.size / 3.88, label = "Immune Debt", family = base.family, fontface  = 'bold') +
-    annotate("text", x = as.Date("2021-06-01"), y = 0.15, size = base.size / 3.88, label = "Pandemic Period", family = base.family) +
-    annotate("text", x = as.Date("2024-12-01"), y = 0.15, size = base.size / 3.88, label = "Post-pandemic Period", family = base.family)
+    annotate("text", x = as.Date("2023-07-01"), y = -0.10, size = base.size / ggplot2::.pt, label = "Immune Debt", family = base.family, fontface  = 'bold') +
+    annotate("text", x = as.Date("2021-06-01"), y = 0.15, size = base.size / ggplot2::.pt, label = "Pandemic Period", family = base.family) +
+    annotate("text", x = as.Date("2024-12-01"), y = 0.15, size = base.size / ggplot2::.pt, label = "Post-pandemic Period", family = base.family)
 }
 
 # Plot D: Sensitivity Analysis (Negative Control)
@@ -347,7 +375,7 @@ if (has_sensitivity) {
   p_sens <- ggplot() +
     geom_ribbon(data = dat.sens.valid, aes(x = date, ymin = ci_lwr, ymax = ci_upr), fill = 'gray50', alpha = 0.3) +
     geom_line(data = dat.sens.valid, aes(x = date, y = pred_mean, color = 'Predicted (Hold-out)'), linetype = 'dashed') +
-    geom_line(data = dat.sens.valid, aes(x = date, y = obs_rate, color = 'Observed'), linewidth = 0.8) +
+    geom_line(data = dat.sens.valid, aes(x = date, y = obs_rate, color = 'Observed'), linewidth = 0.5) +
     scale_color_manual(name = NULL, values = c('Observed' = 'black', 'Predicted (Hold-out)' = 'blue')) +
     scale_x_date(limits = as.Date(c('2018-01-01', '2020-01-01')), breaks = trend_breaks, labels = trend_labels, expand = c(0, 0)) +
     scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
@@ -358,10 +386,11 @@ if (has_sensitivity) {
     ) +
     common_theme +
     theme(
-      legend.position = c(0.78, 0.95), 
-      legend.justification = c(0, 1),
-      legend.background = element_rect(fill = alpha('white', 0.8)),
-      axis.title.x.bottom = element_text(size = base.size * 0.9, family = base.family, color = base.col, face = 'bold', margin = margin(t = 8))
+      legend.position = c(0.98, 0.98), 
+      legend.justification = c(1, 1),
+      legend.background = element_rect(fill = alpha('white', 0.5)),
+      legend.key.spacing.y = unit(-0.20, units = 'cm'),
+      axis.title.x.bottom = element_text(size = base.size, family = base.family, color = base.col, face = 'bold', margin = margin(t = 3))
     )
 } else {
   p_sens <- ggplot() + theme_void() + labs(subtitle = "Insufficient data for Sensitivity Analysis")
@@ -378,11 +407,52 @@ CCCC
 DDDD
 "
 gg <- p_ts / p_diff / p_trend / p_sens + 
-  plot_layout(heights = c(1, 1, 1.2, 1))
+  plot_layout(heights = c(0.8, 0.8, 1.2, 0.8)) + theme(plot.margin = margin(b = -10))
 
 print(summary(gam_model_fixed))
 print(gg)
 
 # Save to file
-width = 12; height = 13
-ggsave(gg, filename = glue('{fig.dir}/{ofig}_{this}.pdf'), width = width, height = height, units = 'in', bg = '#FFFFFF')
+width = 180; height = 165
+ggsave(gg, filename = glue('{fig.dir}/{ofig}_{this}.pdf'), width = width, height = height, units = 'mm', device = cairo_pdf, bg = '#FFFFFF')
+
+# ------------------------------------------------------------------------------
+# Export Source Data
+# ------------------------------------------------------------------------------
+source.dir <- glue('{rt.dir}/Source data')
+if (this == 'HK') {
+  fig.label <- 'Fig.S5'
+} else {
+  fig.label <- 'Fig.2'
+}
+
+write_source_txt <- function(df, panel, title) {
+  con <- file(glue('{source.dir}/{fig.label}{panel}.txt'), open = 'wt', encoding = 'UTF-8')
+  writeLines(c(
+    glue('Source data for {fig.label}{panel}: {title}')
+  ), con)
+  write.table(df, file = con, sep = '\t', row.names = FALSE, quote = FALSE, na = '')
+  close(con)
+}
+
+write_source_txt(
+  dat.result, panel = 'A',
+  title = 'Observed weekly influenza positivity rates versus GAMM counterfactual baseline with 95% simulation-based credible interval'
+)
+
+write_source_txt(
+  dat.result, panel = 'B',
+  title = 'Weekly excess positivity (observed minus counterfactual baseline) with Loess smoothed trend'
+)
+
+write_source_txt(
+  df_trend, panel = 'C',
+  title = 'Quarterly quantification of immunity debt: mean excess rate with 95% simulation-based confidence interval and exact one-sided P values'
+)
+
+if (has_sensitivity) {
+  write_source_txt(
+    dat.sens.valid, panel = 'D',
+    title = 'Negative control out-of-sample validation: model trained on 2010-2017 projected onto held-out 2018-2019 seasons'
+  )
+}

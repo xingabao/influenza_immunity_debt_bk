@@ -1,5 +1,5 @@
-# Base image: RStudio Server with R 4.5.2
-FROM rocker/rstudio:4.5.2
+# Base image: RStudio Server with R 4.5.1
+FROM rocker/rstudio:4.5.1
 
 # Maintainer
 LABEL maintainer="Abao Xing <albertxn@126.com>"

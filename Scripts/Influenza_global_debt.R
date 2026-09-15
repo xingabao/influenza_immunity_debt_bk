@@ -15,8 +15,8 @@ dat.dir <- glue('{rt.dir}/data')
 fig.dir <- glue('{rt.dir}/Figures')
 tbl.dir <- glue('{rt.dir}/Tables')
 ofig <- tools::file_path_sans_ext(basename(basename(this.path::this.path())))
-base.size <- 18
-base.family <- 'serif'
+base.size <- 7
+base.family <- 'sans'
 base.col <- '#000000'
 
 # Define a function
@@ -201,7 +201,7 @@ trend.plot <- function(dat, cat, sdate = '2020-01-01', edate) {
         aes(
           label = scales::percent(excess_est, 0.1)
         ),
-        size = 3.2,
+        size = 6 / ggplot2::.pt,
         direction = "y",
         nudge_y = df_trend$nudge_dynamic, 
         segment.size = 0.3,
@@ -211,14 +211,14 @@ trend.plot <- function(dat, cat, sdate = '2020-01-01', edate) {
         point.padding = 0.1
       ) +
       
-      scale_size_manual(values = c(`FALSE` = 2, `TRUE` = 4), guide = "none") +
+      scale_size_manual(values = c(`FALSE` = 1, `TRUE` = 2), guide = "none") +
       scale_fill_manual(values = c(`FALSE` = "white", `TRUE` = "#E50914"), guide = "none") +
       
       scale_y_continuous(limits = c(-1, 1), labels = scales::percent, expand = c(0, 0)) +
       scale_x_date(NULL, date_breaks = "3 months", date_labels = "%b\n%Y", expand = c(0.05, 0.05)) +
       
       labs(y = NULL, x = NULL, subtitle = cat.) +
-      theme_bw(base_size = 13, base_family = base.family) +
+      theme_bw(base_size = 6, base_family = base.family) +
       theme(
         axis.text.y = element_text(color = base.col, family = base.family),
         axis.text.x = element_text(color = coll, family = base.family),
@@ -229,6 +229,7 @@ trend.plot <- function(dat, cat, sdate = '2020-01-01', edate) {
         legend.box.background = element_rect(fill = "transparent", color = NA)
       )
     
+    attr(p_trend, 'df_trend') <- df_trend %>% mutate(CAT = cat.)
     return(p_trend)
     
   } else {
@@ -394,12 +395,12 @@ lebanon.line <- tibble(x = 60.000000, xend = 33.893791, y = -55.000000, yend = 3
 ins <- c('China')
 map <- ggplot() +
   geom_polygon(data = world.map, aes(long, lat, group = group, fill = positive.rate), color = "#000000", linewidth = 0.3) +
-  geom_segment(data = countries.lines, aes(x = x, xend = xend, y = y , yend = yend), color = "grey50", inherit.aes = FALSE) +
+  geom_segment(data = countries.lines, aes(x = x, xend = xend, y = y , yend = yend), color = "grey50", inherit.aes = FALSE, linewidth = 0.5) +
   scale_x_continuous(limits = c(-350, 350), expand = c(0, 0)) +
   scale_y_continuous(limits = c(-120, 190)) +
   labs(fill = "Mean Excess Rate") +
   geom_text(data = map.lab %>% filter(region %in% ins), aes(x = long, y = lat, label = region), size = 3, color = "black", check_overlap = TRUE) +
-  guides(fill = guide_colorbar(title.position = "top", label.position = "bottom", title.hjust = 0.5, barwidth = 30)) +
+  guides(fill = guide_colorbar(title.position = "top", label.position = "bottom", title.hjust = 0.5, barwidth = unit(60, 'mm'), barheight = unit(2, 'mm'), frame.linewidth = 0.3, ticks.linewidth = 0.3)) +
   scale_fill_gradientn(
     colors = c("#F9E9CD", "#04A3FF", "#FF349C", "#EE3F4D"),
     na.value = "#FFFFFF",
@@ -412,14 +413,14 @@ map <- ggplot() +
     legend.position = 'inside',
     legend.position.inside = c(0.17, 0.955),
     legend.direction = "horizontal",
-    legend.title = element_text(size = 14, margin = margin(b = 10)),
-    legend.text = element_text(size = 10),
+    legend.title = element_text(size = base.size * 0.8, margin = margin(b = 2)),
+    legend.text = element_text(size = base.size * 0.8, margin = margin(t = 2)),
     legend.background = element_blank(),
     legend.key.height = unit(.2, units = 'in'),
     legend.key.width  = unit(.7, units = 'in'),
     legend.key.size = unit(.7, units = 'in'),
     legend.frame = element_rect(colour = '#FFFFFF'),
-    legend.ticks = element_line(colour = '#FFFFFF', size = 2),
+    legend.ticks = element_line(colour = '#FFFFFF', size = 2)
   )
 
 germany <- trend.plot(dat = IFL.DAT.M, cat = 'Germany', edate = '2022-01-01')
@@ -463,5 +464,29 @@ gg <- map +
   inset_element(lebanon, 0.50, 0.00, A(0.50), BB(0.00))
 
 # Save to file
-width = 20; height = 12
-ggsave(gg, filename = glue('{fig.dir}/{ofig}.pdf'), width = width, height = height, units = 'in', bg = '#FFFFFF')
+width = 250; height = 160
+ggsave(gg, filename = glue('{fig.dir}/{ofig}.pdf'), width = width, height = height, units = 'mm', device = cairo_pdf, bg = '#FFFFFF')
+
+# ------------------------------------------------------------------------------
+# Export Source Data
+# ------------------------------------------------------------------------------
+source.dir <- glue('{rt.dir}/Source data')
+fig.label <- 'Fig.S4'
+
+# Insets: quarterly excess estimates for all 13 nations
+dat.s4.insets <- bind_rows(lapply(list(
+  'United Kingdom' = uk, 'Lithuania' = lithuania, 'Turkey' = turkey,
+  'Ukraine' = ukraine, 'Russian Federation' = russia, 'Kazakhstan' = kazakhstan,
+  'France' = france, 'Spain' = spain, 'Germany' = germany,
+  'Slovakia' = slovakia, 'Azerbaijan' = azerbaijan, 'Poland' = poland,
+  'Lebanon' = lebanon
+), function(x) attr(x, 'df_trend')))
+rownames(dat.s4.insets) <- NULL
+
+# Combined source data object
+dat.s4 <- list(
+  map_country_summary = IFL.DAT.H,
+  inset_quarterly_excess = dat.s4.insets
+)
+
+saveRDS(dat.s4, file = glue('{source.dir}/{fig.label}.rds'))

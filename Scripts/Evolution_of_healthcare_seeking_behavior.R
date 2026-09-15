@@ -8,6 +8,7 @@ suppressMessages(suppressWarnings(library(tidyr)))
 suppressMessages(suppressWarnings(library(ggh4x)))
 suppressMessages(suppressWarnings(library(lmtest)))
 suppressMessages(suppressWarnings(library(ggplot2)))
+suppressMessages(suppressWarnings(library(ggtext)))
 suppressMessages(suppressWarnings(library(patchwork)))
 suppressMessages(suppressWarnings(library(splines)))
 suppressMessages(suppressWarnings(library(parallel)))
@@ -27,10 +28,10 @@ dat.dir <- glue('{rt.dir}/data')
 fig.dir <- glue('{rt.dir}/Figures')
 tbl.dir <- glue('{rt.dir}/Tables')
 ofig <- tools::file_path_sans_ext(basename(basename(this.path::this.path())))
-base.size <- 18
-base.family <- 'serif'
+base.size <- 7
+base.family <- 'sans'
 base.col <- '#000000'
-this <- 'HK'  # Options: 'HK' or 'Macau'
+this <- 'Macau'  # Options: 'HK' or 'Macau'
 control <- TRUE
 
 # Define color scheme
@@ -586,11 +587,11 @@ my.theme <- theme_classic(base_size = base.size, base_family = base.family) +
   theme(
     legend.title = element_blank(),
     strip.background = element_blank(),
-    strip.text = element_text(face = 'bold', size = base.size * 0.8, family = base.family, color = base.col),
-    axis.text.x = element_text(size = base.size * 0.8, family = base.family, color = base.col),
-    axis.text.y = element_text(size = base.size * 0.8, family = base.family, color = base.col, angle = 90, hjust = 0.5),
-    axis.title.y.left = element_text(size = base.size * 0.8, family = base.family, color = base.col, face = 'bold', margin = margin(r = 3)),
-    axis.title.x.bottom = element_text(size = base.size * 0.8, family = base.family, color = base.col, face = 'bold', margin = margin(t = 8))
+    strip.text = element_text(face = 'bold', size = base.size, family = base.family, color = base.col),
+    axis.text.x = element_text(size = base.size, family = base.family, color = base.col),
+    axis.text.y = element_text(size = base.size, family = base.family, color = base.col, angle = 90, hjust = 0.5),
+    axis.title.y.left = element_text(size = base.size, family = base.family, color = base.col, face = 'bold', margin = margin(r = 3)),
+    axis.title.x.bottom = element_text(size = base.size, family = base.family, color = base.col, face = 'bold', margin = margin(t = 8))
   )
 
 # A: Time Series
@@ -609,6 +610,7 @@ p1 <- ggplot(dat.long, aes(x = date, y = Value, color = Type)) +
   theme(
     legend.margin = margin(0, 0, 0, 0),
     legend.box.margin = margin(-5, -5, -5, -5),
+    legend.key.spacing.y = unit(-0.25, units = 'cm'),
     legend.position = c(0.10, 0.90)
   ) +
   facetted_pos_scales(
@@ -640,73 +642,89 @@ p2 <- ggplot(ccf_combined, aes(x = Lag, y = ACF)) +
     data = max_ccf,
     aes(label = paste0('Lag:', Lag, '\nr=', sprintf('%.3f', ACF))),
     vjust = ifelse(max_ccf$ACF > 0, -0.2, 1.2),
-    size = base.size / 3.88,
+    size = base.size / ggplot2::.pt,
     fontface = 'bold', 
     family = base.family
   ) +
   my.theme +
   theme(
-    axis.title.x.bottom = element_text(size = base.size * 0.8, family = base.family, color = base.col, face = 'bold', margin = margin(t = -0.5, unit = 'cm'))
+    axis.title.x.bottom = element_text(size = base.size, family = base.family, color = base.col, face = 'bold', margin = margin(t = -0.2, unit = 'cm'))
   )
 
 # C: Granger causality test (Linear)
-granger_combined <- granger_combined %>%
-  mutate(Sig = case_when(
-    P_val < 0.001 ~ '***',
-    P_val < 0.01 ~ '**',
-    P_val < 0.05 ~ '*',
-    TRUE ~ 'NS'
-  ))
+format_p_exact <- function(p) {
+  vapply(p, function(x) {
+    if (is.na(x)) return(NA_character_)
+    if (x < .Machine$double.eps) {
+      return(sprintf('&lt; 2.220 × 10<sup>%d</sup>', floor(log10(.Machine$double.eps))))
+    }
+    if (x >= 0.001) {
+      return(formatC(x, format = 'f', digits = 3))
+    }
+    exponent <- floor(log10(x))
+    sprintf('%.3f × 10<sup>%d</sup>', x / 10^exponent, exponent)
+  }, character(1))
+}
+
+add_sig <- function(df) {
+  df %>% mutate(
+    Sig = case_when(
+      P_val < 0.001 ~ '***',
+      P_val < 0.01 ~ '**',
+      P_val < 0.05 ~ '*',
+      TRUE ~ 'NS'
+    ),
+    P_label = glue('*P* = {format_p_exact(P_val)}')
+  )
+}
+
+granger_combined <- add_sig(granger_combined)
 
 p3 <- ggplot(granger_combined, aes(x = Direction, y = F_stat, fill = Direction)) +
-  geom_bar(stat = 'identity', width = 0.6, alpha = 0.8) +
-  geom_text(
-    aes(
-      label = Sig,
-      y = ifelse(F_stat > ifelse(control, 2, 5), F_stat / 2, F_stat),
-      vjust = ifelse(F_stat > 5, 0.5, -0.5)
-    ),
-    color = base.col,
-    family = base.family,
-    size = base.size / 3.88
+  geom_bar(stat = 'identity', width = 0.8, alpha = 0.8) +
+  geom_richtext(
+    aes(label = P_label, y = F_stat),
+    vjust = -0.5,
+    size = 5 / ggplot2::.pt,
+    color = '#000000',
+    fill = NA,
+    label.color = NA,
+    label.padding = unit(0, 'lines')
   ) +
   facet_wrap(~Period) +
   scale_fill_manual(values = c(col_cause, col_reverse)) +
+  scale_y_continuous(limits = c(0, max(granger_combined$F_stat) * 1.2)) +
+  coord_cartesian(clip = TRUE) +
   labs(y = 'Granger F-Score', x = NULL) +
   my.theme +
   theme(
     legend.position = 'none',
-    axis.text.x = element_text(size = base.size * 0.8, family = base.family, color = base.col, lineheight = 0.60)
+    axis.text.x = element_text(size = base.size, family = base.family, color = base.col, lineheight = 0.60)
   )
 
 # C2: Non-linear Granger causality test
-ngranger_combined <- ngranger_combined %>%
-  mutate(Sig = case_when(
-    P_val < 0.001 ~ '***',
-    P_val < 0.01 ~ '**',
-    P_val < 0.05 ~ '*',
-    TRUE ~ 'NS'
-  ))
+ngranger_combined <- add_sig(ngranger_combined)
 
 p3b <- ggplot(ngranger_combined, aes(x = Direction, y = Stat, fill = Direction)) +
-  geom_bar(stat = 'identity', width = 0.6, alpha = 0.8) +
-  geom_text(
-    aes(
-      label = Sig,
-      y = ifelse(Stat > ifelse(this == 'Macau', 4, 4), Stat / 2, Stat),
-      vjust = ifelse(Stat > 5, 0.5, -0.5)
-    ),
-    color = base.col,
-    family = base.family,
-    size = base.size / 3.88
+  geom_bar(stat = 'identity', width = 0.8, alpha = 0.8) +
+  geom_richtext(
+    aes(label = P_label, y = Stat),
+    vjust = -0.5,
+    size = 5 / ggplot2::.pt,
+    color = '#000000',
+    fill = NA,
+    label.color = NA,
+    label.padding = unit(0, 'lines')
   ) +
   facet_wrap(~Period) +
   scale_fill_manual(values = c(col_cause, col_reverse)) +
+  scale_y_continuous(limits = c(0, max(ngranger_combined$Stat) * 1.2)) +
+  coord_cartesian(clip = TRUE) +
   labs(y = 'Non-linear Granger\n(Deviance)', x = NULL) +
   my.theme +
   theme(
     legend.position = 'none',
-    axis.text.x = element_text(size = base.size * 0.8, family = base.family, color = base.col, lineheight = 0.60)
+    axis.text.x = element_text(size = base.size, family = base.family, color = base.col, lineheight = 0.60)
   )
 
 # D: CCM + Surrogates limit
@@ -720,7 +738,7 @@ if (nrow(ccm_plot_combined) > 0) {
     geom_line(
       data = filter(ccm_plot_combined, Class == 'Null 95%'),
       aes(color = Direction, linetype = Class),
-      linewidth = 0.8,
+      linewidth = 0.5,
       alpha = 0.7
     ) +
     
@@ -728,7 +746,7 @@ if (nrow(ccm_plot_combined) > 0) {
     geom_line(
       data = filter(ccm_plot_combined, Class == 'Observed'),
       aes(color = Direction),
-      linewidth = 1.2
+      linewidth = 0.5
     ) +
     
     facet_grid(~Period, scales = 'free_x', space = 'free_x') +
@@ -750,12 +768,12 @@ if (nrow(ccm_plot_combined) > 0) {
   
   if (this == 'Macau') {
     if  (control) {
-      p4 <- p4 + theme(legend.position = c(0.55, 0.35))
+      p4 <- p4 + theme(legend.position = c(0.55, 0.35), legend.spacing.y = unit(-0.30, units = 'cm'), legend.key.spacing.y = unit(-0.25, units = 'cm'))
     } else {
-      p4 <- p4 + theme(legend.position = c(0.55, 0.75))
+      p4 <- p4 + theme(legend.position = c(0.55, 0.75), legend.spacing.y = unit(-0.30, units = 'cm'), legend.key.spacing.y = unit(-0.25, units = 'cm'))
     }
   } else {
-    p4 <- p4 + theme(legend.position = c(0.25, 0.38))
+    p4 <- p4 + theme(legend.position = c(0.25, 0.38), legend.spacing.y = unit(-0.30, units = 'cm'), legend.key.spacing.y = unit(-0.25, units = 'cm'))
   }
 } else {
   p4 <- ggplot() + theme_void() + labs(title = 'CCM failed (insufficient data).')
@@ -787,18 +805,70 @@ EEFFFF
 '
 
 gg <- p1 / (p3 + p3b + p2) / (p5 + p4) /
-  plot_layout(heights = c(1, 0.8, 1))
+  plot_layout(heights = c(0.8, 0.8, 1))
 
 print(gg)
 
 # Save to file
-width = 14; height = 14
+width = 180; height = 160
 if (this == 'Macau' && control) {
-  ggsave(gg, filename = glue('{fig.dir}/{ofig}_{this}_control.pdf'), width = width, height = height, units = 'in', bg = '#FFFFFF')
+  ggsave(gg, filename = glue('{fig.dir}/{ofig}_{this}_control.pdf'), width = width, height = height, units = 'mm', device = cairo_pdf, bg = '#FFFFFF')
 } else {
-  ggsave(gg, filename = glue('{fig.dir}/{ofig}_{this}.pdf'), width = width, height = height, units = 'in', bg = '#FFFFFF')
+  ggsave(gg, filename = glue('{fig.dir}/{ofig}_{this}.pdf'), width = width, height = height, units = 'mm', device = cairo_pdf, bg = '#FFFFFF')
 }
 
 end.time <- Sys.time()
 run.time <- end.time - start.time
 print(run.time)
+
+
+# ------------------------------------------------------------------------------
+# Export Source Data
+# ------------------------------------------------------------------------------
+source.dir <- glue('{rt.dir}/Source data')
+if (this == 'HK') {
+  fig.label <- 'Fig.S23'
+} else if (control) {
+  fig.label <- 'Fig.S24'
+} else {
+  fig.label <- 'Fig.S22'
+}
+
+write_source_txt <- function(df, panel, title) {
+  con <- file(glue('{source.dir}/{fig.label}{panel}.txt'), open = 'wt', encoding = 'UTF-8')
+  writeLines(c(
+    glue('Source data for {fig.label}{panel}: {title}')
+  ), con)
+  write.table(df, file = con, sep = '\t', row.names = FALSE, quote = FALSE, na = '')
+  close(con)
+}
+
+write_source_txt(
+  dat.long, panel = 'A',
+  title = 'Longitudinal temporal synchronization of standardized influenza activity and digital search intensity, stratified by pre- and post-pandemic periods'
+)
+
+write_source_txt(
+  granger_combined, panel = 'B',
+  title = 'Linear Granger causality test between search intensity and influenza activity'
+)
+
+write_source_txt(
+  ngranger_combined, panel = 'C',
+  title = 'Non-linear (GAM-based) Granger causality test between search intensity and influenza activity'
+)
+
+write_source_txt(
+  ccf_combined, panel = 'D',
+  title = 'Cross-correlation function between search queries and clinical influenza incidence'
+)
+
+write_source_txt(
+  sens_combined, panel = 'E',
+  title = 'Sensitivity of cross map skill (rho) to embedding dimension E'
+)
+
+write_source_txt(
+  ccm_plot_combined, panel = 'F',
+  title = 'Convergent cross mapping (CCM) predictive skill (rho) versus library size, with 95% surrogate null limit'
+)

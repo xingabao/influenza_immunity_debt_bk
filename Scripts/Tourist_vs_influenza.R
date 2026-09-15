@@ -2,6 +2,7 @@
 suppressMessages(suppressWarnings(library(glue)))
 suppressMessages(suppressWarnings(library(dplyr)))
 suppressMessages(suppressWarnings(library(scales)))
+suppressMessages(suppressWarnings(library(ggtext)))
 suppressMessages(suppressWarnings(library(ggplot2)))
 suppressMessages(suppressWarnings(library(stringr)))
 suppressMessages(suppressWarnings(library(lubridate)))
@@ -14,8 +15,8 @@ dat.dir <- glue('{rt.dir}/data')
 fig.dir <- glue('{rt.dir}/Figures')
 tbl.dir <- glue('{rt.dir}/Tables')
 ofig <- tools::file_path_sans_ext(basename(basename(this.path::this.path())))
-base.size <- 18
-base.family <- 'serif'
+base.size <- 7
+base.family <- 'sans'
 base.col <- '#000000'
 
 # Define a function
@@ -24,25 +25,25 @@ is_integer_string_col <- function(x) {
   if (sum(is.na(num_x)) > sum(is.na(x))) {
     return(FALSE)
   }
-  
+
   if (all(is.na(num_x))) {
     return(FALSE)
   }
-  
+
   all(num_x %% 1 == 0, na.rm = TRUE)
 }
 
 find_cols_with_keyword <- function(df, keyword = '人次') {
-  
+
   check_col <- function(x) {
     x_char <- as.character(x)
     any(str_detect(x_char, keyword), na.rm = TRUE)
   }
-  
+
   has_keyword_vec <- vapply(df, check_col, FUN.VALUE = logical(1))
-  
+
   col_indices <- which(has_keyword_vec)
-  
+
   return(col_indices)
 }
 
@@ -66,7 +67,7 @@ if (!exists('dat.tou')) {
     tmp <- data.frame(year = str_extract(xlsx, '\\d{4}'), month = str_extract(xlsx, '(?<=M)\\d+'), num = dftmp[1, indices[2]])
     dat.tou <- rbind(dat.tou, tmp)
   }
-  
+
   dat.tou <- dat.tou %>% as_tibble()
   dat.fac <- readxl::read_excel(glue('{dat.dir}/Macau/FLU-AQ-CLIMATE.xlsx')) %>% dplyr::select(Year, Week, Flu = FLUAB) %>% filter(Year > 2009)
 }
@@ -105,8 +106,8 @@ dat.agg <- dat.flu.weekly %>%
   mutate(year = year(month_date), month = month(month_date))
 
 dat.merged.stat <- inner_join(
-  dat.tou.monthly %>% mutate(month_date = floor_date(date, 'month')), 
-  dat.agg, 
+  dat.tou.monthly %>% mutate(month_date = floor_date(date, 'month')),
+  dat.agg,
   by = 'month_date'
 ) %>%
   mutate(month_fac = factor(month.x))
@@ -121,28 +122,43 @@ p_val_cor <- format.pval(cor_res$p.value, eps = 0.001, digits = 3)
 dat.recent <- dat.merged.stat %>% filter(year.x >= 2023)
 has_recent_data <- nrow(dat.recent) > 10
 
+fmt_p_html <- function(x) {
+  vapply(x, function(p) {
+    if (is.na(p)) return(NA_character_)
+    if (p < .Machine$double.eps) return('&lt; 2.220 × 10<sup>-16</sup>')
+    if (p >= 0.001) return(formatC(p, format = 'f', digits = 3))
+    e <- floor(log10(p))
+    sprintf('%.3f × 10<sup>%d</sup>', p / 10^e, e)
+  }, character(1))
+}
+
 if (has_recent_data) {
-  
+
   # Model: Influenza ~ Tourists + Month Factor
   fit_model <- lm(flu_rate_monthly ~ visitors + month_fac, data = dat.recent)
   sum_model <- summary(fit_model)
-  
+
   coef_vis <- sum_model$coefficients['visitors', 'Estimate']
   pval_vis <- sum_model$coefficients['visitors', 'Pr(>|t|)']
   r2_adj   <- sum_model$adj.r.squared
-  
-  pval_vis_txt <- format.pval(pval_vis, eps = 0.001, digits = 3)
-  if (substr(pval_vis_txt, 1, 1) == '<') {
-    pval_vis_str <- paste0('P < ', substr(pval_vis_txt, 2, 100))
-  } else {
-    pval_vis_str <- paste0('P = ', pval_vis_txt)
-  }
-  
+
+  pval_vis_str <- vapply(pval_vis, function(x) {
+    if (is.na(x)) return(NA_character_)
+    if (x < .Machine$double.eps) {
+      return('<i>P</i> &lt; 2.220 × 10<sup>-16</sup>')
+    }
+    if (x >= 0.001) {
+      return(paste0('<i>P</i> = ', formatC(x, format = 'f', digits = 3)))
+    }
+    exponent <- floor(log10(x))
+    paste0('<i>P</i> = ', sprintf('%.3f × 10<sup>%d</sup>', x / 10^exponent, exponent))
+  }, character(1))
+
   stats_label <- paste0(
-    'Statistical analysis:\n',
-    '• Correlation (Pearson):', '\n    r = ', r_val, ' (P ', ifelse(cor_res$p.value < 0.001, '< 0.001', paste0('= ', p_val_cor)), ')\n',
-    '• Regression (Adj. for seasonality):\n',
-    '    Visitor Coef. = ', formatC(coef_vis, format = 'e', digits = 3), ', ', pval_vis_str, ', Adj. R2 = ', sprintf('%.3f', r2_adj)
+    'Statistical analysis:<br/>',
+    '• Correlation (Pearson):<br/>    r = ', r_val, ' (<i>P</i> = ', fmt_p_html(cor_res$p.value), ')<br/>',
+    '• Regression (Adj. for seasonality):<br/>',
+    '    Visitor Coef. = ', formatC(coef_vis, format = 'e', digits = 3), ', <i>P</i> = ', fmt_p_html(pval_vis), ', Adj. R<sup>2</sup> = ', sprintf('%.3f', r2_adj)
   )
 } else {
   stats_label <- 'Insufficient data for regression analysis'
@@ -164,10 +180,20 @@ col_flu <- '#CC79A7'
 p_dual <- ggplot() +
   geom_col(data = dat.tou.monthly, aes(x = date, y = visitors / coeff, fill = 'Monthly tourists'), width = 25, alpha = 0.5) +
   geom_line(data = dat.flu.weekly, aes(x = date, y = Flu, color = 'Weekly influenza rate'), linewidth = 0.5, alpha = 0.9) +
-  annotate(
-    'label', x = as.Date('2010-11-10'), y = max_flu * 1.15, label = stats_label, 
-    hjust = 0, vjust = 1, size = base.size / 3.88, family = base.family,
-    fill = '#FFFFFF', alpha = 0.8, lineheight = 1.5
+  geom_richtext(
+    data = data.frame(
+      x = as.Date('2010-11-10'),
+      y = max_flu * 1.15,
+      label = stats_label
+    ),
+    aes(x = x, y = y, label = label),
+    hjust = 0, vjust = 1,
+    size = base.size / ggplot2::.pt,
+    family = base.family,
+    fill = '#FFFFFF', alpha = 0.8,
+    label.color = 'black', label.padding = unit(0.25, 'lines'),
+    lineheight = 1.5,
+    inherit.aes = FALSE
   ) +
   scale_x_date(NULL, date_breaks = '1 year', date_labels = '%b\n%Y', expand = c(0, 0), limits = as.Date(c('2010-01-01', '2026-01-01'))) +
   scale_y_continuous(
@@ -182,16 +208,18 @@ p_dual <- ggplot() +
   labs(subtitle = 'Overlay of high-frequency surveillance (Weekly) and demographic flow (Monthly)') +
   theme_classic(base_size = base.size, base_family = base.family) +
   theme(
-    plot.subtitle = element_text(size = base.size * 0.9, family = base.family, color = base.col),
-    axis.title.y.left = element_text(size = base.size * 0.9, family = base.family,color = col_flu, face = 'bold', margin = margin(r = 10)),
-    axis.text.y.left = element_text(size = base.size * 0.8, family = base.family, color = col_flu),
+    plot.subtitle = element_text(size = base.size, family = base.family, color = base.col),
+    axis.title.y.left = element_text(size = base.size, family = base.family,color = col_flu, face = 'bold', margin = margin(r = 10)),
+    axis.text.y.left = element_text(size = base.size, family = base.family, color = col_flu),
     axis.line.y.left = element_line(color = col_flu),
-    axis.title.y.right = element_text(size = base.size * 0.9, family = base.family,color = col_tourist, face = 'bold', angle = 90, margin = margin(l = 10)),
-    axis.text.y.right = element_text(size = base.size * 0.8, family = base.family, color = col_tourist),
+    axis.title.y.right = element_text(size = base.size, family = base.family,color = col_tourist, face = 'bold', angle = 90, margin = margin(l = 10)),
+    axis.text.y.right = element_text(size = base.size, family = base.family, color = col_tourist),
+    axis.text.x = element_text(size = base.size, family = base.family),
     axis.line.y.right = element_line(color = col_tourist),
-    legend.position = c(0.65, 0.85),
+    legend.position = c(0.68, 0.85),
     legend.direction = 'horizontal',
-    legend.spacing.y = unit(-0.4, 'cm'),
+    legend.spacing.y = unit(-0.25, 'cm'),
+    legend.key.height = unit(0.25, units = 'cm'),
     legend.background = element_blank()
   ); p_dual
 
@@ -201,10 +229,10 @@ p_dual <- ggplot() +
 dat.season <- dat.merged.stat %>%
   group_by(month.x) %>%
   summarise(
-    mean_vis = mean(visitors, na.rm=TRUE),
-    mean_flu = mean(flu_rate_monthly, na.rm=TRUE),
-    se_vis = sd(visitors, na.rm=TRUE)/sqrt(n()),
-    se_flu = sd(flu_rate_monthly, na.rm=TRUE)/sqrt(n())
+    mean_vis = mean(visitors, na.rm = TRUE),
+    mean_flu = mean(flu_rate_monthly, na.rm = TRUE),
+    se_vis = sd(visitors, na.rm = TRUE)/sqrt(n()),
+    se_flu = sd(flu_rate_monthly, na.rm = TRUE)/sqrt(n())
   )
 
 scale_season <- max(dat.season$mean_vis) / max(dat.season$mean_flu)
@@ -229,14 +257,14 @@ p_season <- ggplot(dat.season, aes(x = month.x)) +
   theme_bw(base_size = base.size, base_family = base.family) +
   theme(
     legend.position = 'none', 
-    plot.subtitle = element_text(size = base.size * 0.9, family = base.family, color = base.col),
-    axis.title.y.left = element_text(size = base.size * 0.9, family = base.family,color = col_flu, face = 'bold', margin = margin(r = 10)),
-    axis.text.y.left = element_text(size = base.size * 0.8, family = base.family, color = col_flu),
+    plot.subtitle = element_text(size = base.size, family = base.family, color = base.col),
+    axis.title.y.left = element_text(size = base.size, family = base.family,color = col_flu, face = 'bold', margin = margin(r = 10)),
+    axis.text.y.left = element_text(size = base.size, family = base.family, color = col_flu),
     axis.line.y.left = element_line(color = col_flu),
-    axis.title.y.right = element_text(size = base.size * 0.9, family = base.family,color = col_tourist, face = 'bold', angle = 90, margin = margin(l = 10)),
-    axis.text.y.right = element_text(size = base.size * 0.8, family = base.family, color = col_tourist),
+    axis.title.y.right = element_text(size = base.size, family = base.family,color = col_tourist, face = 'bold', angle = 90, margin = margin(l = 10)),
+    axis.text.y.right = element_text(size = base.size, family = base.family, color = col_tourist),
     axis.line.y.right = element_line(color = col_tourist),
-    axis.text.x = element_text(size = base.size * 0.8, family = base.family, color = base.col)
+    axis.text.x = element_text(size = base.size, family = base.family, color = base.col)
   ); p_season
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -248,5 +276,34 @@ gg <- p_dual / p_season + plot_layout(heights = c(2, 1))
 print(gg)
 
 # Save to file
-width = 12; height = 9
-ggsave(gg, filename = glue('{fig.dir}/{ofig}.pdf'), width = width, height = height, units = 'in', bg = '#FFFFFF')
+ggsave(gg, filename = glue('{fig.dir}/{ofig}.pdf'), width = 180, height = 120, units = 'mm', device = cairo_pdf, bg = '#FFFFFF')
+
+# ------------------------------------------------------------------------------
+# Export Source Data
+# ------------------------------------------------------------------------------
+source.dir <- glue('{rt.dir}/Source data')
+fig.label <- 'Fig.S25'
+
+write_source_txt <- function(df, panel, title) {
+  con <- file(glue('{source.dir}/{fig.label}{panel}.txt'), open = 'wt', encoding = 'UTF-8')
+  writeLines(c(
+    glue('Source data for {fig.label}{panel}: {title}')
+  ), con)
+  write.table(df, file = con, sep = '\t', row.names = FALSE, quote = FALSE, na = '')
+  close(con)
+}
+
+write_source_txt(
+  dat.tou.monthly, panel = 'A',
+  title = 'Monthly inbound visitor arrivals to Macau, 2010-2025 (Statistics and Census Service)'
+)
+
+write_source_txt(
+  dat.flu.weekly, panel = 'A',
+  title = 'Weekly influenza positivity rates from the Kiang Wu Hospital cohort used in the dual-axis overlay'
+)
+
+write_source_txt(
+  dat.season, panel = 'B',
+  title = 'Seasonal aggregation of monthly mean visitor arrivals and influenza positivity rates with standard errors'
+)

@@ -27,8 +27,8 @@ POST_FROM     <- 2023
 MAX_SAMPLE    <- 60
 
 # Plot constants
-base.size <- 18
-base.family <- 'serif'
+base.size <- 7
+base.family <- 'sans'
 base.col <- '#000000'
 
 col.pre <- '#56B4E9'
@@ -307,14 +307,14 @@ median_lines <- plot_pairs %>%
 
 fig1 <- ggplot(plot_pairs, aes(x = tmrca, fill = comparison, color = comparison)) +
   annotate('rect', xmin = NPI_FROM, xmax = NPI_TO, ymin = -Inf, ymax = Inf, alpha = 0.09, fill = 'grey30') +
-  annotate('text', x = mean(c(NPI_FROM, NPI_TO)), y = Inf, label = 'COVID-19\nloackdowns', vjust = 1.5, size = base.size / 5.8, family = base.family, color = 'grey40', lineheight = 0.8) +
+  annotate('text', x = mean(c(NPI_FROM, NPI_TO)), y = Inf, label = 'COVID-19\nloackdowns', vjust = 1.5, size = base.size / ggplot2::.pt, family = base.family, color = 'grey40', lineheight = 0.8) +
   geom_density(alpha = 0.28, linewidth = 0.4, adjust = 1.1) +
   geom_vline(data = median_lines, aes(xintercept = med_tmrca, color = comparison), linetype = 'dashed', linewidth = 0.35) +
   geom_text(
     data = median_lines,
     aes(x = med_tmrca, y = Inf, label = round(med_tmrca, 1), color = comparison),
     vjust = -0.3, hjust = 0.5,
-    size = base.size / 6, family = base.family,
+    size = base.size / ggplot2::.pt, family = base.family,
     show.legend = FALSE
   ) +
   scale_fill_manual(values  = comp_colors, name = NULL) +
@@ -330,23 +330,26 @@ fig1 <- ggplot(plot_pairs, aes(x = tmrca, fill = comparison, color = comparison)
   theme(
     legend.position.inside = c(0.20, 0.92),
     legend.position    = 'inside',
-    legend.text        = element_text(size = base.size * 0.6, color = base.col),
+    legend.text        = element_text(size = base.size, color = base.col),
     legend.background  = element_blank(),
+    legend.key.spacing.y = unit(0.1, units = 'cm'),
+    legend.key.height    = unit(0.25, units = 'cm'),
+    legend.key.width     = unit(0.25, units = 'cm'),
     strip.background   = element_blank(),
-    strip.text         = element_text(size = base.size * 0.6, face = 'italic', color = base.col),
+    strip.text         = element_text(size = base.size, face = 'italic', color = base.col),
     panel.spacing.y    = unit(0.1, "lines"),
     panel.grid.minor   = element_blank(),
     panel.grid.major   = element_blank(),
-    axis.text          = element_text(color = base.col, size = base.size * 0.6),
-    axis.title         = element_text(color = base.col, face = 'bold', size  = base.size * 0.7),
+    axis.text          = element_text(color = base.col, size = base.size),
+    axis.title         = element_text(color = base.col, face = 'bold', size  = base.size),
     axis.ticks         = element_line(color = '#000000', linewidth = 0.3),
-    axis.title.x       = element_text(margin = margin(t = 10))
+    axis.title.x       = element_text(margin = margin(t = 3))
   ) + guides(
     fill  = guide_legend(override.aes = list(color = NA, fill = comp_colors, alpha = 0.3, linewidth = 0.6)),
     color = "none"
   )
 
-ggsave(fig1, filename = glue('{fig.dir}/{ofig}_tmrca_distributions.pdf'), width = 5, height = 8, units = 'in', bg = '#FFFFFF')
+ggsave(fig1, filename = glue('{fig.dir}/{ofig}_tmrca_distributions.pdf'), width = 90, height = 144, units = 'mm', device = cairo_pdf, bg = '#FFFFFF')
 
 # Fig 2: Clade-level lollipop plot
 clade_plot <- all_clades %>%
@@ -360,14 +363,14 @@ clade_plot <- all_clades %>%
 
 fig2 <- ggplot(clade_plot, aes(y = reorder(clade_pair, mean_tmrca), x = mean_tmrca, color = subtype_label)) +
   annotate('rect', xmin = NPI_FROM, xmax = NPI_TO, ymin = -Inf, ymax = Inf, alpha = 0.09, fill = 'grey30') +
-  annotate('text', x = mean(c(NPI_FROM, NPI_TO)), y = Inf, label = 'NPI Period', hjust = 0.5, vjust = -0.5, size = base.size / 6, family = base.family, color = 'grey40') +
+  annotate('text', x = mean(c(NPI_FROM, NPI_TO)), y = Inf, label = 'NPI Period', hjust = 0.5, vjust = -0.5, size = base.size / ggplot2::.pt, family = base.family, color = 'grey40') +
   geom_segment(
     aes(xend = NPI_FROM, yend = reorder(clade_pair, mean_tmrca)),
     linewidth = 0.6, alpha = 0.45, linetype = 'dotted'
   ) +
   geom_errorbarh(aes(xmin = ci_lo, xmax = ci_hi), height = 0.45, linewidth = 0.5, alpha = 0.6) +
   geom_point(size = 0.5, alpha = 0.92) +
-  geom_text(aes(label = round(mean_tmrca, 1)), hjust = 1.45, vjust = 0.35, size = base.size / 5.8, family = base.family, color = base.col, show.legend = FALSE) +
+  geom_text(aes(label = round(mean_tmrca, 1)), hjust = 1.45, vjust = 0.35, size = base.size / ggplot2::.pt, family = base.family, color = base.col, show.legend = FALSE) +
   scale_x_continuous(
     name   = 'Mean TMRCA \u00b1 SD (Year)',
     limits = c(2009, 2026),
@@ -380,17 +383,17 @@ fig2 <- ggplot(clade_plot, aes(y = reorder(clade_pair, mean_tmrca), x = mean_tmr
   theme(
     legend.position    = 'none',
     strip.background   = element_blank(),
-    strip.text         = element_text(size = base.size * 0.6, face = 'italic', color = base.col),
+    strip.text         = element_text(size = base.size, face = 'italic', color = base.col),
     panel.spacing.y    = unit(0.1, "lines"),
     panel.grid.minor   = element_blank(),
     panel.grid.major   = element_blank(),
-    axis.text          = element_text(color = base.col, size = base.size * 0.6),
-    axis.title         = element_text(color = base.col, face = 'bold', size  = base.size * 0.7),
+    axis.text          = element_text(color = base.col, size = base.size),
+    axis.title         = element_text(color = base.col, face = 'bold', size  = base.size),
     axis.ticks         = element_line(color = '#000000', linewidth = 0.3),
-    axis.title.x       = element_text(margin = margin(t = 10))
+    axis.title.x       = element_text(margin = margin(t = 3))
   )
 
-ggsave(fig2, filename = glue('{fig.dir}/{ofig}_clade_tmrca.pdf'), width = 5, height = 8, units = 'in', bg = '#FFFFFF')
+ggsave(fig2, filename = glue('{fig.dir}/{ofig}_clade_tmrca.pdf'), width = 90, height = 144, units = 'mm', device = cairo_pdf, bg = '#FFFFFF')
 
 # Fig 3: Mean TMRCA with 95% CI
 summ_plot <- all_stats %>%
@@ -412,7 +415,7 @@ fig3 <- ggplot(summ_plot, aes(x = comparison, y = mean_tmrca, color = comparison
   
   annotate(
     'text', x = 'Post vs Post', y = mean(c(NPI_FROM, NPI_TO)) - 1, label = 'COVID-19 loackdowns',
-    hjust = 0.5, vjust = -0.8, size = base.size / 6, family = base.family, color = 'grey40'
+    hjust = 0.7, vjust = -1.2, size = base.size / ggplot2::.pt, family = base.family, color = 'grey40'
   ) +
   
   geom_hline(
@@ -421,7 +424,7 @@ fig3 <- ggplot(summ_plot, aes(x = comparison, y = mean_tmrca, color = comparison
   ) +
   geom_errorbar(aes(ymin = ci_lo, ymax = ci_hi), width = 0.10, linewidth = 0.5) +
   geom_point(size = 0.8) +
-  geom_text(aes(label = round(mean_tmrca, 1)), vjust = -1.1, size = base.size / 5, family = base.family, color = base.col, show.legend = FALSE) +
+  geom_text(aes(label = round(mean_tmrca, 1)), vjust = -1.1, size = base.size / ggplot2::.pt, family = base.family, color = base.col, show.legend = FALSE) +
   
   scale_color_manual(values = comp_colors, name = NULL) +
   scale_x_discrete(limits = c('Pre vs Pre', 'Pre vs Post', 'Post vs Post')) +
@@ -438,16 +441,16 @@ fig3 <- ggplot(summ_plot, aes(x = comparison, y = mean_tmrca, color = comparison
   theme(
     legend.position    = 'none',
     strip.background   = element_blank(),
-    strip.text         = element_text(size = base.size * 0.6, face = 'italic', color = base.col),
+    strip.text         = element_text(size = base.size, face = 'italic', color = base.col),
     panel.grid.minor   = element_blank(),
     panel.grid.major   = element_blank(),
-    axis.text.x        = element_text(angle = 0, color = base.col, size = base.size * 0.6),
-    axis.text.y        = element_text(color = base.col, size = base.size * 0.6),
+    axis.text.x        = element_text(angle = 0, color = base.col, size = base.size),
+    axis.text.y        = element_text(color = base.col, size = base.size),
     axis.ticks         = element_line(color = '#000000', linewidth = 0.3),
-    axis.title         = element_text(color = base.col, face = 'bold', size = base.size * 0.7)
+    axis.title         = element_text(color = base.col, face = 'bold', size = base.size)
   )
 
-ggsave(fig3, filename = glue('{fig.dir}/{ofig}_tmrca_summary.pdf'), width = 10, height = 3.5, units = 'in', bg = '#FFFFFF')
+ggsave(fig3, filename = glue('{fig.dir}/{ofig}_tmrca_summary.pdf'), width = 180, height = 60, units = 'mm', device = cairo_pdf, bg = '#FFFFFF')
 
 # Output tables
 table_stats <- all_stats %>%
@@ -488,9 +491,7 @@ table_gap <- map_dfr(results, function(r) {
     `TMRCA Gap (Years)`          = round(postp - cpp, 2),
     `Wilcoxon W`                 = round(r$wilcox_W,  0),
     `Wilcoxon p (one-sided)`     = signif(r$wilcox_p, 3),
-    `Significance`               = ifelse(r$wilcox_p < 0.001, '***',
-                                          ifelse(r$wilcox_p < 0.01, '**',
-                                                 ifelse(r$wilcox_p < 0.05, '*', 'ns'))),
+    `Significance`               = ifelse(r$wilcox_p < 0.001, '***', ifelse(r$wilcox_p < 0.01, '**', ifelse(r$wilcox_p < 0.05, '*', 'ns'))),
     `Interpretation`             = ifelse(
       (postp - cpp) > 2,
       'Pre-Post TMRCA substantially older than Post-Post: supports importation-driven lineage replacement',
@@ -506,4 +507,34 @@ openxlsx::write.xlsx(
     'TMRCA Gap Effect'  = table_gap
   ),
   file = glue('{tbl.dir}/Table.Lineage_Continuity_Test.xlsx')
+)
+
+# ------------------------------------------------------------------------------
+# Export Source Data
+# ------------------------------------------------------------------------------
+source.dir <- glue('{rt.dir}/Source data')
+fig.label <- 'Fig.S28'
+
+write_source_txt <- function(df, panel, title) {
+  con <- file(glue('{source.dir}/{fig.label}{panel}.txt'), open = 'wt', encoding = 'UTF-8')
+  writeLines(c(
+    glue('Source data for {fig.label}{panel}: {title}')
+  ), con)
+  write.table(df, file = con, sep = '\t', row.names = FALSE, quote = FALSE, na = '')
+  close(con)
+}
+
+write_source_txt(
+  plot_pairs, panel = 'A,B,C',
+  title = 'Kernel density estimates of pairwise TMRCA distributions by comparison group (Pre vs Pre, Pre vs Post, Post vs Post) and subtype'
+)
+
+write_source_txt(
+  clade_plot, panel = 'D,E,F',
+  title = 'Clade-level mean TMRCA (±1 SD) for pre-to-post-pandemic clade pairs by subtype'
+)
+
+write_source_txt(
+  summ_plot, panel = 'G,H,I',
+  title = 'Summary mean TMRCA (±95% CI) by comparison group and subtype'
 )

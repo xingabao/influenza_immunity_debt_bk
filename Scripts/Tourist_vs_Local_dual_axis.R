@@ -12,21 +12,21 @@ dat.dir <- glue('{rt.dir}/data')
 fig.dir <- glue('{rt.dir}/Figures')
 tbl.dir <- glue('{rt.dir}/Tables')
 ofig <- tools::file_path_sans_ext(basename(basename(this.path::this.path())))
-base.size <- 18
-base.family <- 'serif'
+base.size <- 7
+base.family <- 'sans'
 base.col <- '#000000'
 flu <- 'FLUA'  # Options: 'FLUA' or 'FLUB'
 
 # Load data
 if (file.exists(glue('{rt.dir}/../data/Macau/INFLU-U2.csv.gz'))) {
-  # The primary clinical dataset comprising individual-level electronic health records 
+  # The primary clinical dataset comprising individual-level electronic health records
   # from Kiang Wu Hospital is not publicly available due to patient privacy regulations
   # and ethical restrictions regarding the protection of personal health information;
-  # however, anonymized data supporting the findings of this study may be made available 
+  # however, anonymized data supporting the findings of this study may be made available
   # to qualified researchers upon reasonable request to the corresponding authors,
   # subject to approval by the institutional review board and the execution of a data sharing agreement.
   dat.raw <- data.table::fread(glue('{rt.dir}/../data/Macau/INFLU-U2.csv.gz'))
-  
+
   # Prepare plot data
   dat.pl <- dat.raw %>% dplyr::select(Year, Week, Local, FLUA, FLUB) %>% filter(Local != -1)
   saveRDS(dat.pl, file = glue('{dat.dir}/Macau/Tourist_vs_Local_dual_axis.rds'))
@@ -35,26 +35,26 @@ if (file.exists(glue('{rt.dir}/../data/Macau/INFLU-U2.csv.gz'))) {
 }
 
 process_virus_counts <- function(dt, virus_name) {
-  
+
   if (virus_name == 'FLUA') {
     dt <- dt %>% filter(FLUA == 1)
   } else {
     dt <- dt %>% filter(FLUB == 1)
   }
-  
+
   counts <- dt[get(virus_name) > 0, .(Count = .N), by = .(Year, Week, Local)]
-  
+
   counts[, Week_Date := ISOweek2date(sprintf('%04d-W%02d-1', Year, Week))]
-  
+
   res <- dcast(counts, Week_Date ~ Local, value.var = 'Count', fun.aggregate = sum, fill = 0)
-  
+
   setnames(res, 'Week_Date', 'Week')
   if ('0' %in% names(res)) setnames(res, '0', 'Tourist') else res[, Tourist := 0]
   if ('1' %in% names(res)) setnames(res, '1', 'Local')   else res[, Local := 0]
-  
+
   setcolorder(res, c('Week', 'Tourist', 'Local'))
   setorder(res, Week)
-  
+
   return(res)
 }
 
@@ -74,10 +74,10 @@ scale_factor <- max(df_ts$Local) / max(df_ts$Tourist)
 
 plot_A <- ggplot(df_ts, aes(x = Week)) +
   
-  geom_line(aes(y = Local, color = 'Local Residents'), linewidth = 1.0, linetype = 'dashed') +
+  geom_line(aes(y = Local, color = 'Local Residents'), linewidth = 0.5, linetype = 'dashed') +
   geom_area(aes(y = Local), fill = '#56B4E9', alpha = 0.1) +
 
-  geom_line(aes(y = Tourist * scale_factor, color = 'Tourists'), linewidth = 1.0) +
+  geom_line(aes(y = Tourist * scale_factor, color = 'Tourists'), linewidth = 0.5) +
   
   scale_y_continuous(
     name = 'Local Cases (Weekly)',
@@ -99,14 +99,15 @@ plot_A <- ggplot(df_ts, aes(x = Week)) +
     legend.position.inside = c(0.05, 0.85),
     legend.justification = c(0, 1),
     legend.background = element_rect(fill = 'transparent', color = NA),
-    legend.key.height = unit(0.8, 'cm'),
+    legend.key.spacing.y = unit(0.1, units = 'cm'),
+    legend.key.height = unit(0.25, units = 'cm'),
     legend.text = element_text(size = base.size * 0.9, family = base.family, color = base.col),
     legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = 'in'),
     legend.title = element_blank(),
     axis.title.x = element_blank(),
-    axis.title.y.left = element_text(size = base.size * 0.9, family = base.family, color = '#56B4E9', face = 'bold', margin = margin(r = 1)),
-    axis.title.y.right = element_text(size = base.size * 0.9, family = base.family, color = '#CC79A7', face = 'bold', margin = margin(l = 1)),
-    axis.text = element_text(size = base.size * 0.8, family = base.family, color = base.col),
+    axis.title.y.left = element_text(size = base.size, family = base.family, color = '#56B4E9', face = 'bold', margin = margin(r = 1)),
+    axis.title.y.right = element_text(size = base.size, family = base.family, color = '#CC79A7', face = 'bold', margin = margin(l = 1)),
+    axis.text = element_text(size = base.size, family = base.family, color = base.col),
     panel.grid = element_blank(),
     plot.margin = margin(t = 0.1, r = 0.1, b = 0.4, l = 0.1, unit = 'in'),
   )
@@ -143,9 +144,9 @@ plot_B <- ggplot(df_ccf, aes(x = Lag, y = ACF)) +
   theme_bw(base_size = base.size, base_family = base.family) +
   theme(
     panel.grid = element_blank(),
-    axis.title.y.left = element_text(size = base.size * 0.9, family = base.family, color = base.col, face = 'bold', margin = margin(r = 1)),
-    axis.title.x.bottom = element_text(size = base.size * 0.9, family = base.family, color = base.col, face = 'bold', margin = margin(t = 5)),
-    axis.text = element_text(size = base.size * 0.8, family = base.family, color = base.col),
+    axis.title.y.left = element_text(size = base.size, family = base.family, color = base.col, face = 'bold', margin = margin(r = 1)),
+    axis.title.x.bottom = element_text(size = base.size, family = base.family, color = base.col, face = 'bold', margin = margin(t = 5)),
+    axis.text = element_text(size = base.size, family = base.family, color = base.col),
     axis.title.x.top = element_blank(),
     plot.margin = margin(t = 0, r = -1, b = 0.1, l = 0.1, unit = 'in')
   )
@@ -187,25 +188,33 @@ dat.spatial <- dat.spatial[dat.spatial$lon < 114, ]
 
 plot_C <- ggplot(dat.spatial, aes(x = lon, y = lat)) +
   ggplot2::geom_sf(data = MACAU, fill = 'NA', colour = '#444444', linewidth = 0.10, inherit.aes = FALSE) +
-  stat_density_2d(aes(fill = ..level..), geom = 'polygon', color = 'white', alpha = 0.8, linewidth = 0.40) +
+  stat_density_2d(aes(fill = ..level..), geom = 'polygon', color = 'white', alpha = 0.8, linewidth = 0.25) +
   scale_fill_viridis_c(option = 'magma') +
+  scale_x_continuous(
+    breaks = pretty(range(dat.spatial$lon), n = 2),
+    labels = function(x) sprintf('%.2f°E', x)
+  ) +
+  scale_y_continuous(
+    breaks = pretty(range(dat.spatial$lat), n = 4),
+    labels = function(x) sprintf('%.2f°N', x)
+  ) +
   facet_wrap(~Phase, strip.position = 'bottom') +
-  annotate('text', x = 113.553889, y = 22.223556, label = 'Tourist Hub', color = '#E50914', size = base.size / 4.88) +
+  annotate('text', x = 113.553889, y = 22.223556, label = 'Tourist Hub', color = '#E50914', size = base.size / ggplot2::.pt) +
   annotate(
     'segment', 
     x = 113.553889, y = 22.220556,
     xend = 113.550889, yend = 22.210556,
     color = '#CC79A7',
-    linewidth = 0.75,
+    linewidth = 0.45,
     arrow = arrow(length = unit(0.2, 'cm'))
   ) +
-  annotate('text', x = 113.583889, y = 22.190556, label = 'High-Density\nResidential Area', color = '#A1F7F3', size = base.size / 4.88, lineheight = 0.85) +
+  annotate('text', x = 113.583889, y = 22.190556, label = 'High-Density\nResidential Area', color = '#A1F7F3', size = base.size / ggplot2::.pt, lineheight = 0.85) +
   annotate(
     'segment', 
     x = 113.583889, y = 22.195556,
     xend = 113.555889, yend = 22.208556,
     color = '#A1F7F3',
-    linewidth = 0.75,
+    linewidth = 0.45,
     arrow = arrow(length = unit(0.2, 'cm'))
   ) +
   annotate(
@@ -213,7 +222,7 @@ plot_C <- ggplot(dat.spatial, aes(x = lon, y = lat)) +
     x = 113.583889, y = 22.195556,
     xend = 113.543889, yend = 22.203556,
     color = '#A1F7F3',
-    linewidth = 0.75,
+    linewidth = 0.45,
     arrow = arrow(length = unit(0.2, 'cm'))
   ) +
   annotate(
@@ -221,15 +230,16 @@ plot_C <- ggplot(dat.spatial, aes(x = lon, y = lat)) +
     x = 113.583889, y = 22.185356,
     xend = 113.556889, yend = 22.159256,
     color = '#A1F7F3',
-    linewidth = 0.75,
+    linewidth = 0.45,
     arrow = arrow(length = unit(0.2, 'cm'))
   ) +
   labs(x = 'Spatial Diffusion Pattern', y = '') +
   theme_dark(base_size = base.size, base_family = base.family) +
   theme(
-    axis.title.x = element_text(size = base.size * 0.9, family = base.family, color = base.col, face = 'bold', margin = margin(t = 0.20, unit = 'in')),
+    axis.title.x = element_text(size = base.size, family = base.family, color = base.col, face = 'bold', margin = margin(t = 0.20, unit = 'in')),
     axis.title.y = element_blank(),
-    axis.text = element_blank(),
+    axis.text.x  = element_text(family = base.family, color = base.col, size = base.size, margin = margin(t = 1)),
+    axis.text.y  = element_text(family = base.family, color = base.col, size = base.size, margin = margin(r = 1), angle = 90, vjust = 0.5, hjust = 0.5),
     axis.ticks = element_line(color = NA),
     legend.position = 'none',
     plot.margin = margin(t = 0, r = -1, b = 0.2, l = 0, unit = 'in')
@@ -241,7 +251,7 @@ plot_C <- ggplot(dat.spatial, aes(x = lon, y = lat)) +
 bottom_row <- plot_grid(
   plot_B, plot_C,
   ncol = 2,
-  rel_widths = c(1, 1.4) 
+  rel_widths = c(0.5, 1.5) 
 )
 
 gg <- plot_grid(
@@ -254,5 +264,38 @@ gg <- plot_grid(
 print(gg)
 
 # Save to file
-width = 12; height = 10
-ggsave(gg, filename = glue('{fig.dir}/{ofig}_{flu}.pdf'), width = width, height = height, units = 'in', bg = '#FFFFFF')
+ggsave(gg, filename = glue('{fig.dir}/{ofig}_{flu}.pdf'), width = 180, height = 160, units = 'mm', device = cairo_pdf, bg = '#FFFFFF')
+
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# Export Source Data
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+source.dir <- glue('{rt.dir}/Source data')
+if (flu == 'FLUA') {
+  fig.label <- 'Fig.S26'
+} else {
+  fig.label <- 'Fig.S27'
+}
+
+write_source_txt <- function(df, panel, title) {
+  con <- file(glue('{source.dir}/{fig.label}{panel}.txt'), open = 'wt', encoding = 'UTF-8')
+  writeLines(c(
+    glue('Source data for {fig.label}{panel}: {title}')
+  ), con)
+  write.table(df, file = con, sep = '\t', row.names = FALSE, quote = FALSE, na = '')
+  close(con)
+}
+
+write_source_txt(
+  df_ts, panel = 'A',
+  title = glue('Weekly {flu} cases among local residents and tourists (dual-axis time series)')
+)
+
+write_source_txt(
+  df_ccf, panel = 'B',
+  title = glue('Cross-correlation function between differenced weekly {flu} cases of tourists and local residents (95% CI threshold = {round(ci_threshold, 4)})')
+)
+
+write_source_txt(
+  dat.spatial, panel = 'C',
+  title = glue('Spatial distribution of {flu} cases in early and spread phases (kernel density input points)')
+)

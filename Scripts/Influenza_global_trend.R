@@ -15,8 +15,8 @@ dat.dir <- glue('{rt.dir}/data')
 fig.dir <- glue('{rt.dir}/Figures')
 tbl.dir <- glue('{rt.dir}/Tables')
 ofig <- tools::file_path_sans_ext(basename(basename(this.path::this.path())))
-base.size <- 18
-base.family <- 'serif'
+base.size <- 7
+base.family <- 'sans'
 base.col <- '#000000'
 
 # Define a function
@@ -39,7 +39,7 @@ chart.plot <- function(cat){
   
   gg <- data %>%
     ggplot(aes(date, positive.rate)) +
-    geom_point(size = 2) +
+    geom_point(size = 0.85) +
     geom_line(color = "grey50") +
     geom_hline(yintercept = 0, color = "grey50", linetype = "dashed") +
     annotate("rect", xmin = as.Date("2020-04-01"), xmax = as.Date("2021-03-31"), ymin = 0, ymax = max_axis, alpha = 0.2, fill = "#EE000055") +
@@ -48,7 +48,7 @@ chart.plot <- function(cat){
     scale_x_date(NULL, date_breaks = "1 year", date_labels = "%b\n%Y", expand = c(0.01, 0)) +
     guides(color = 'none') +
     labs(y = NULL, x = NULL, subtitle = cat.) +
-    theme_bw(base_size = 13, base_family = base.family) +
+    theme_bw(base_size = base.size, base_family = base.family) +
     theme(
       axis.text = element_text(color = base.col, family = base.family),
       panel.grid.major.x = element_blank(),
@@ -59,16 +59,16 @@ chart.plot <- function(cat){
     )
   
   if (cat == 'Russia') {
-    font.size <- 3
+    font.size <- base.size / ggplot2::.pt
     lineheight <- 0.8
     lwd.size <- 0.38
-    gg + annotate("text", x = c(as.Date("2018-08-01")), y = 0.65, size = font.size, label = c("Pre-pandemic\nperiod"), lineheight = lineheight) +
-      geom_segment(aes(xend = as.Date("2020-04-01"), y = 0.65, x = as.Date("2021-03-01"), yend = 0.65), arrow = arrow(length = unit(0.1, 'cm')), lwd = lwd.size) +
-      geom_segment(aes(xend = as.Date("2023-04-01"), y = 0.65, x = as.Date("2022-06-01"), yend = 0.65 ), arrow = arrow(length = unit(0.1, 'cm')), lwd = lwd.size) +
-      annotate("text", x = c(as.Date("2021-10-01")), y = 0.65, size = font.size, label = c("Pandemic\nperiod"), lineheight = lineheight) +
-      annotate("text", x = c(as.Date("2020-10-01")), y = 0.50, size = font.size, label = c("Acute\nphase"), color = "#EE0000", lineheight = lineheight) +
-      annotate("text", x = c(as.Date("2022-04-01")), y = 0.50, size = font.size, label = c("Transition\nphase"), color = "#3B4992", lineheight = lineheight) +
-      annotate("text", x = c(as.Date("2024-02-01")), y = 0.65, size = font.size, label = c("Post-\npandemic\nperiod"), lineheight = lineheight)
+    gg + annotate("text", x = c(as.Date("2018-08-01")), y = 0.65, size = font.size * 0.7, label = c("Pre-pandemic\nperiod"), lineheight = lineheight) +
+      geom_segment(aes(xend = as.Date("2020-04-01"), y = 0.65, x = as.Date("2021-03-01"), yend = 0.65), arrow = arrow(length = unit(0.05, 'cm')), lwd = lwd.size / 2) +
+      geom_segment(aes(xend = as.Date("2023-04-01"), y = 0.65, x = as.Date("2022-06-01"), yend = 0.65 ), arrow = arrow(length = unit(0.05, 'cm')), lwd = lwd.size / 2) +
+      annotate("text", x = c(as.Date("2021-10-01")), y = 0.65, size = font.size * 0.7, label = c("Pandemic\nperiod"), lineheight = lineheight) +
+      annotate("text", x = c(as.Date("2020-10-01")), y = 0.50, size = font.size * 0.7, label = c("Acute\nphase"), color = "#EE0000", lineheight = lineheight) +
+      annotate("text", x = c(as.Date("2022-04-01")), y = 0.50, size = font.size * 0.7, label = c("Transition\nphase"), color = "#3B4992", lineheight = lineheight) +
+      annotate("text", x = c(as.Date("2024-02-01")), y = 0.65, size = font.size * 0.7, label = c("Post-\npandemic\nperiod"), lineheight = lineheight)
   } else {
     gg
   }
@@ -232,12 +232,12 @@ lebanon.line <- tibble(x = 60.000000, xend = 33.893791, y = -55.000000, yend = 3
 ins <- c('China')
 map <- ggplot() +
   geom_polygon(data = world.map, aes(long, lat, group = group, fill = positive.rate), color = "#000000", linewidth = 0.3) +
-  geom_segment(data = countries.lines, aes(x = x, xend = xend, y = y , yend = yend), color = "grey50", inherit.aes = FALSE) +
+  geom_segment(data = countries.lines, aes(x = x, xend = xend, y = y , yend = yend), color = "grey50", inherit.aes = FALSE, linewidth = 0.3) +
   scale_x_continuous(limits = c(-350, 350), expand = c(0, 0)) +
   scale_y_continuous(limits = c(-120, 190)) +
   labs(fill = "Infection Rate") +
-  geom_text(data = map.lab %>% filter(region %in% ins), aes(x = long, y = lat, label = region), size = 3, color = "black", check_overlap = TRUE) +
-  guides(fill = guide_colorbar(title.position = "top", label.position = "bottom", title.hjust = 0.5, barwidth = 30)) +
+  geom_text(data = map.lab %>% filter(region %in% ins), aes(x = long, y = lat, label = region), size = base.size / ggplot2::.pt, color = "black", check_overlap = TRUE) +
+  guides(fill = guide_colorbar(title.position = "top", label.position = "bottom", title.hjust = 0.5, barwidth = unit(60, 'mm'), barheight = unit(2, 'mm'), frame.linewidth = 0.3, ticks.linewidth = 0.3)) +
   scale_fill_gradientn(
     colors = c("#F9E9CD", "#04A3FF", "#FF349C", "#EE3F4D"),
     na.value = "#FFFFFF",
@@ -250,14 +250,14 @@ map <- ggplot() +
     legend.position = 'inside',
     legend.position.inside = c(0.17, 0.955),
     legend.direction = "horizontal",
-    legend.title = element_text(size = 14, margin = margin(b = 10)),
-    legend.text = element_text(size = 10),
+    legend.title = element_text(size = base.size * 0.8, margin = margin(b = 2)),
+    legend.text = element_text(size = base.size * 0.8, margin = margin(t = 2)),
     legend.background = element_blank(),
     legend.key.height = unit(.2, units = 'in'),
     legend.key.width  = unit(.7, units = 'in'),
     legend.key.size = unit(.7, units = 'in'),
     legend.frame = element_rect(colour = '#FFFFFF'),
-    legend.ticks = element_line(colour = '#FFFFFF', size = 2),
+    legend.ticks = element_line(colour = '#FFFFFF', size = 2)
   )
 
 germany <- chart.plot('Germany')
@@ -290,7 +290,7 @@ gg <- map +
   inset_element(lithuania, 0.48, 0.645, A(0.48), B(0.645)) +
   inset_element(turkey, 0.24, 0.00, A(0.24), BB(0.00)) +
   inset_element(ukraine, 0.70, 0.81, A(0.70), B(0.81)) +
-  inset_element(russia, 0.75, 0.6, A(0.75), B(0.6)) +
+  inset_element(russia, 0.75, 0.56, A(0.75), B(0.62)) +
   inset_element(kazakhstan, 0.73, 0.34, Aa(0.73), Bb(0.34)) +
   inset_element(france, -0.007, 0.50, aa(-0.007), B(0.50)) +
   inset_element(spain, 0.01, 0.28, A(0.01), Bb(0.28)) +
@@ -301,5 +301,19 @@ gg <- map +
   inset_element(lebanon, 0.50, 0.00, A(0.50), BB(0.00))
 
 # Save to file
-width = 20; height = 12
-ggsave(gg, filename = glue('{fig.dir}/{ofig}.pdf'), width = width, height = height, units = 'in', bg = '#FFFFFF')
+width = 250; height = 160
+ggsave(gg, filename = glue('{fig.dir}/{ofig}.pdf'), width = width, height = height, units = 'mm', device = cairo_pdf, bg = '#FFFFFF')
+
+
+# ------------------------------------------------------------------------------
+# Export Source Data
+# ------------------------------------------------------------------------------
+source.dir <- glue('{rt.dir}/Source data')
+fig.label <- 'Fig.S3'
+
+dat.s3 <- list(
+  map_country_summary = IFL.DAT.H,
+  inset_weekly_series = IFL.DAT.M
+)
+
+saveRDS(dat.s3, file = glue('{source.dir}/{fig.label}.rds'))

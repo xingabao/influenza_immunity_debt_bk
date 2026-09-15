@@ -12,8 +12,8 @@ dat.dir <- glue('{rt.dir}/data')
 fig.dir <- glue('{rt.dir}/Figures')
 tbl.dir <- glue('{rt.dir}/Tables')
 ofig <- tools::file_path_sans_ext(basename(basename(this.path::this.path())))
-base.size <- 18
-base.family <- 'serif'
+base.size <- 7
+base.family <- 'sans'
 base.col <- '#000000'
 
 # Load data
@@ -106,12 +106,12 @@ plot. <- function(RES, ylab) {
   ggplot(RES$UDF, aes(x = KID, y = FLU)) +
     geom_line(color = "#141473") +
     geom_hline(yintercept = RES$threshold, linetype = "dashed", color = "#E50914") +
-    geom_point(data = RES$points, aes(x = KID_selected, y = FLU_selected), color = '#E50914', size = 1.5, alpha = 0.5) +
+    geom_point(data = RES$points, aes(x = KID_selected, y = FLU_selected), color = '#E50914', size = 0.75, alpha = 0.5) +
     geom_rect(data = RES$peaks, aes(xmin = Start, xmax = End, ymin = -Inf, ymax = Inf), inherit.aes = FALSE, alpha = 0.2, fill = "#00A087") +
     geom_text(
       data = RES$peaks,
       aes(x = as.POSIXct((as.numeric(Start) + as.numeric(End)) / 2), y = 0.55), label = RES$peaks$Group,
-      family = base.family, color = base.col, size = base.size / 3.88
+      family = base.family, color = base.col, size = 5 / ggplot2::.pt
     ) +
     scale_x_datetime(
       breaks = seq(as.POSIXct("2010-01-01"), as.POSIXct("2026-01-01"), by = "1 year"),
@@ -123,10 +123,10 @@ plot. <- function(RES, ylab) {
     coord_cartesian(xlim = c(as.POSIXct("2010-01-01"), as.POSIXct("2026-04-01"))) +
     theme_classic() +
     theme(
-      axis.text.x = element_text(margin = margin(t = 5), color = base.col, size = base.size * 0.9, angle = 30, hjust = 1, family = base.family),
-      axis.text.y = element_text(margin = margin(r = 5), color = base.col, size = base.size * 0.9, family = base.family),
-      axis.title.x = element_text(margin = margin(t = 15), color = base.col, size = base.size * 0.9, family = base.family),
-      axis.title.y = element_text(margin = margin(r = 15, l = 10), color = base.col, size = base.size * 0.9, family = base.family)
+      axis.text.x = element_text(margin = margin(t = 2), color = base.col, size = base.size, angle = 30, hjust = 1, family = base.family),
+      axis.text.y = element_text(margin = margin(r = 1), color = base.col, size = base.size, family = base.family),
+      axis.title.x = element_text(margin = margin(t = 5), color = base.col, size = base.size, family = base.family),
+      axis.title.y = element_text(margin = margin(r = 5, l = -5), color = base.col, size = base.size, family = base.family)
     )
 }
 
@@ -152,23 +152,23 @@ color_bar_grob <- ggplotGrob(
     scale_x_datetime(expand = c(0, 0)) +
     scale_y_continuous(expand = c(0, 0), limits = c(0, 1)) +
     coord_cartesian(xlim = c(as.POSIXct("2010-01-01"), as.POSIXct("2025-12-31"))) +
-    theme_void(base_size = base.size * 0.9, base_family = base.family) +
+    theme_void(base_size = base.size, base_family = base.family) +
     theme(plot.margin = margin(0, 0, 0, 0))
 )
 
-font.size <- base.size / 3.88
+font.size <- base.size / ggplot2::.pt
 lineheight <- 0.9
-lwd.size <- 0.4
+lwd.size <- 0.25
 
 text_desc_grob <- ggplotGrob(
   ggplot() +
-    annotate("text", x = as.POSIXct("2016-08-15"), y = 100, size = font.size * 0.9, label = "Pre-pandemic period", lineheight = lineheight, family = base.family, vjust = 0.4) +
-    geom_segment(aes(x = as.POSIXct("2020-10-01"), xend = as.POSIXct("2020-04-01"), y = 70, yend = 70), arrow = arrow(length = unit(0.1, 'cm')), linewidth = lwd.size) +
-    geom_segment(aes(x = as.POSIXct("2022-12-01"), xend = as.POSIXct("2023-04-15"), y = 70, yend = 70), arrow = arrow(length = unit(0.1, 'cm')), linewidth = lwd.size) +
-    annotate("text", x = as.POSIXct("2021-11-01"), y = 100, size = font.size * 0.9, label = "Pandemic period", lineheight = lineheight, family = base.family, vjust = 0.4) +
-    annotate("text", x = as.POSIXct("2020-10-01"), y = 25, size = font.size * 0.7, label = "(Acute phase)", color = "#EE0000") +
-    annotate("text", x = as.POSIXct("2022-04-15"), y = 25, size = font.size * 0.7, label = "(Transition phase)", color = "#3B4992") +
-    annotate("text", x = as.POSIXct("2024-08-30"), y = 100, size = font.size * 0.9, label = "Post-pandemic period", lineheight = lineheight, family = base.family, vjust = 0.4) +
+    annotate("text", x = as.POSIXct("2016-08-15"), y = 100, size = font.size * 0.72, label = "Pre-pandemic period", lineheight = lineheight, family = base.family, vjust = 0.4) +
+    geom_segment(aes(x = as.POSIXct("2020-10-01"), xend = as.POSIXct("2020-04-01"), y = 60, yend = 60), arrow = arrow(length = unit(0.1, 'cm')), linewidth = lwd.size) +
+    geom_segment(aes(x = as.POSIXct("2022-12-01"), xend = as.POSIXct("2023-04-15"), y = 60, yend = 60), arrow = arrow(length = unit(0.1, 'cm')), linewidth = lwd.size) +
+    annotate("text", x = as.POSIXct("2022-04-15"), y = 100, size = font.size * 0.72, label = "Pandemic\nperiod", lineheight = lineheight, family = base.family, vjust = 0.4) +
+    annotate("text", x = as.POSIXct("2020-10-01"), y = 35, size = font.size * 0.72, label = "(Acute phase)", color = "#EE0000") +
+    annotate("text", x = as.POSIXct("2022-04-15"), y = 15, size = font.size * 0.72, label = "(Transition phase)", color = "#3B4992") +
+    annotate("text", x = as.POSIXct("2024-08-30"), y = 100, size = font.size * 0.72, label = "Post-pandemic\nperiod", lineheight = lineheight, family = base.family, vjust = 0.4) +
     scale_x_datetime(expand = c(0, 0)) +
     scale_y_continuous(expand = c(0, 0), limits = c(0, 100)) +
     coord_cartesian(xlim = c(as.POSIXct("2010-01-01"), as.POSIXct("2025-12-31")), clip = 'off') +
@@ -178,11 +178,21 @@ text_desc_grob <- ggplotGrob(
 
 jst <- 0.008
 gg <- ggdraw(main_gg) +  
-  draw_grob(text_desc_grob, x = 0, y = 0.500 + jst, width = 1, height = 0.150) + 
-  draw_grob(color_bar_grob, x = 0, y = 0.947 + jst, width = 1, height = 0.025) + 
-  draw_grob(color_bar_grob, x = 0, y = 0.639 + jst, width = 1, height = 0.025) + 
-  draw_grob(color_bar_grob, x = 0, y = 0.332 + jst, width = 1, height = 0.025)
+  draw_grob(text_desc_grob, x = 0, y = 0.495 + jst, width = 1, height = 0.150) + 
+  draw_grob(color_bar_grob, x = 0, y = 0.915 + jst, width = 1, height = 0.025) + 
+  draw_grob(color_bar_grob, x = 0, y = 0.622 + jst, width = 1, height = 0.050) + 
+  draw_grob(color_bar_grob, x = 0, y = 0.327 + jst, width = 1, height = 0.025)
 
 # Save to file
-width = 10; height = 8
-ggsave(gg, filename = glue('{fig.dir}/{ofig}.pdf'), width = width, height = height, bg = '#FFFFFF')
+width = 100; height = 80
+ggsave(gg, filename = glue('{fig.dir}/{ofig}.pdf'), width = width, height = height, units = 'mm', device = cairo_pdf, bg = '#FFFFFF')
+
+# ------------------------------------------------------------------------------
+# Export Source Data
+# ------------------------------------------------------------------------------
+source.dir <- glue('{rt.dir}/Source data')
+fig.label <- 'Fig.S1'
+
+saveRDS(list(weekly = RESA$UDF,  peaks = RESA$peaks),  file = glue('{source.dir}/{fig.label}B.rds'))
+saveRDS(list(weekly = RESB$UDF,  peaks = RESB$peaks),  file = glue('{source.dir}/{fig.label}C.rds'))
+saveRDS(list(weekly = RESAB$UDF, peaks = RESAB$peaks), file = glue('{source.dir}/{fig.label}D.rds'))

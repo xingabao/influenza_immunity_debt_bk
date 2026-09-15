@@ -25,8 +25,8 @@ if (this == 'H1N1') {
 }
 
 # Plotting Constants
-base.size <- 18
-base.family <- 'serif'
+base.size <- 7
+base.family <- 'sans'
 base.col <- '#000000'
 
 # Load data
@@ -104,14 +104,14 @@ gg <- ggtree(tree.obj, mrsd = max.date) +
   geom_tippoint(
     data = . %>% filter(!Clade %in% ignore.clades & !is.na(Clade)),
     aes(color = Clade, shape = Subtype), 
-    size = 2.5, 
+    size = 1.5, 
     alpha = 0.8
   ) +
   
   geom_label_repel(
     data = label.df,
     aes(x = x, y = y, label = Clade, color = Clade),
-    size = 4,
+    size = base.size / ggplot2::.pt,
     family = base.family,
     nudge_x = 0.5,
     box.padding = 0.5,
@@ -133,22 +133,24 @@ gg <- ggtree(tree.obj, mrsd = max.date) +
   guides(shape = 'none') +
   
   annotate('rect', xmin = 2020, xmax = 2023, ymin = -Inf, ymax = Inf, alpha = 0.1, fill = 'gray30') +
-  annotate('text', x = ifelse(this == 'B', 2016, ifelse(this == 'H3N2', 2015.5, 2016)), y = ifelse(this == 'B', 600, ifelse(this == 'H3N2', 950, 600)), label = ifelse(this == 'H3N2', 'Pre-Pandemic\nPeriod', 'Pre-Pandemic Period'), color = '#00A087', size = base.size / 4.00, family = base.family) +
-  annotate('text', x = ifelse(this == 'H1N1', 2022, 2021.5), y = 50, label = 'NPIs / COVID-19 Pandemic', color = base.col, size = base.size / 4.00, family = base.family) +
-  annotate('text', x = 2025.5, y = ifelse(this == 'B', 200, ifelse(this == 'H3N2', 400, 300)), label = 'Post-Pandemic\nPeriod', color = '#E50914', size = base.size / 4.00, family = base.family, lineheight = 0.85) +
+  annotate('text', x = ifelse(this == 'B', 2016, ifelse(this == 'H3N2', 2016.5, 2014)), y = ifelse(this == 'B', 600, ifelse(this == 'H3N2', 950, 600)), label = ifelse(this == 'H3N2', 'Pre-Pandemic\nPeriod', 'Pre-Pandemic Period'), color = '#00A087', size = base.size / ggplot2::.pt, family = base.family) +
+  annotate('text', x = ifelse(this == 'H1N1', 2022, 2021.5), y = 50, label = 'NPIs / COVID-19 Pandemic', color = base.col, size = base.size / ggplot2::.pt, family = base.family) +
+  annotate('text', x = 2025.5, y = ifelse(this == 'B', 200, ifelse(this == 'H3N2', 400, 300)), label = 'Post-Pandemic\nPeriod', color = '#E50914', size = base.size / ggplot2::.pt, family = base.family, lineheight = 0.85) +
 
   labs(subtitle = glue('Influenza {this.label}'), x = NULL) +
   
   theme(
     legend.position = "inside",
-    legend.position.inside = c(ifelse(this == 'B', 0.05, ifelse(this == 'H3N2', 0.10, 0.05)), c(ifelse(this == 'B', 0.65, ifelse(this == 'H3N2', 0.65, 0.60)))),
+    legend.position.inside = c(ifelse(this == 'B', 0.05, ifelse(this == 'H3N2', 0.13, 0.05)), c(ifelse(this == 'B', 0.65, ifelse(this == 'H3N2', 0.65, 0.60)))),
     legend.title = element_blank(),
-    legend.text = element_text(size = base.size * 0.7, family = base.family, color = base.col),
+    legend.text = element_text(size = base.size, family = base.family, color = base.col),
+    legend.key.spacing.y = unit(0.15, units = 'cm'),
+    legend.key.height = unit(0.25, units = 'cm'),
     legend.background = element_blank(),
     text = element_text(size = base.size, family = base.family, color = base.col),
-    axis.title.x = element_text(size = base.size * 0.8, family = base.family, color = base.col, face = 'bold', margin = margin(t = 10)),
-    axis.text.x = element_text(size = base.size * 0.8, family = base.family, color = base.col),
-    plot.subtitle = element_text(size = base.size * 0.8, family = base.family, color = base.col, hjust = 0.5),
+    axis.title.x = element_text(size = base.size, family = base.family, color = base.col, face = 'bold', margin = margin(t = 10)),
+    axis.text.x = element_text(size = base.size, family = base.family, color = base.col),
+    plot.subtitle = element_text(size = base.size, family = base.family, color = base.col, hjust = 0.5),
     axis.line.x = element_line(color = "black")
   )
 
@@ -156,5 +158,17 @@ gg <- ggtree(tree.obj, mrsd = max.date) +
 print(gg)
 
 # Save to file
-width = 5; height = 4
-ggsave(gg, filename = glue('{fig.dir}/{ofig}_{this}.pdf'), width = width, height = height, units = 'in', bg = '#FFFFFF')
+width = 80; height = 70
+ggsave(gg, filename = glue('{fig.dir}/{ofig}_{this}.pdf'), width = width, height = height, units = 'mm', device = cairo_pdf, bg = '#FFFFFF')
+
+# ------------------------------------------------------------------------------
+# Export Source Data
+# ------------------------------------------------------------------------------
+source.dir <- glue('{rt.dir}/Source data')
+
+fig.label <- case_when(
+  this == 'H1N1' ~ 'Fig.6A',
+  this == 'H3N2' ~ 'Fig.6B',
+  this == 'B'    ~ 'Fig.6C'
+)
+saveRDS(tree.obj, file = glue('{source.dir}/{fig.label}.rds'))

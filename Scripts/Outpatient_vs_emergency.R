@@ -17,8 +17,8 @@ fig.dir <- glue('{rt.dir}/Figures')
 tbl.dir <- glue('{rt.dir}/Tables')
 ofig <- tools::file_path_sans_ext(basename(basename(this.path::this.path())))
 this <- 'Macau'
-base.size <- 18
-base.family <- 'serif'
+base.size <- 7
+base.family <- 'sans'
 base.col <- '#000000'
 flu <- 'FLUA'  # Options: 'FLUA' or 'FLUB'
 
@@ -89,10 +89,10 @@ p2 <- ggplot(dat.ana, aes(x = Period, y = ER.ratio, fill = Period)) +
     vjust = 0.5
   ) + theme(
     legend.position = 'none',
-    axis.title.y.left = element_text(size = base.size * 0.9, family = base.family, color = base.col, face = 'bold', margin = margin(r = 1)),
-    axis.title.x.bottom = element_text(size = base.size * 0.9, family = base.family, color = base.col, face = 'bold', margin = margin(t = 5)),
-    axis.text = element_text(size = base.size * 0.8, family = base.family, color = base.col),
-    plot.subtitle = element_text(size = base.size * 0.9, family = base.family, color = base.col),
+    axis.title.y.left = element_text(size = base.size, family = base.family, color = base.col, face = 'bold', margin = margin(r = 1)),
+    axis.title.x.bottom = element_text(size = base.size, family = base.family, color = base.col, face = 'bold', margin = margin(t = 5)),
+    axis.text = element_text(size = base.size, family = base.family, color = base.col),
+    plot.subtitle = element_text(size = base.size, family = base.family, color = base.col),
     plot.margin = margin(t = 0.05, b = 0, unit = 'in')
   ); p2
 
@@ -104,12 +104,12 @@ dat.plot <- model.result %>%
   )
 p3 <- ggplot(dat.plot %>% filter(term != '(Intercept)'), aes(x = estimate, y = term, xmin = conf.low, xmax = conf.high)) +
   geom_vline(xintercept = 1, linetype = 'dashed', color = 'gray50') +
-  geom_errorbar(aes(xmin = conf.low, xmax = conf.high), color = color.er, width = 0.03, linewidth = 1.0) + 
+  geom_errorbar(aes(xmin = conf.low, xmax = conf.high), color = color.er, width = 0.03, linewidth = 0.5) + 
   geom_point(color = color.er, size = 3, shape = 18) +
   geom_text(
     aes(label = label_text), 
     vjust = -1.5,
-    size = base.size * 0.25,
+    size = base.size / ggplot2::.pt,
     family = base.family,
     color = base.col
   ) +
@@ -122,12 +122,12 @@ p3 <- ggplot(dat.plot %>% filter(term != '(Intercept)'), aes(x = estimate, y = t
   scale_y_discrete(labels = c('PeriodPost-Pandemic' = 'Post-Pandemic Effect')) +
   theme_classic(base_size = base.size, base_family = base.family) +
   theme(
-    plot.subtitle = element_text(size = base.size * 0.9, family = base.family, color = base.col),
+    plot.subtitle = element_text(size = base.size, family = base.family, color = base.col),
     plot.margin = margin(t = 0.05, b = 0, unit = 'in'),
-    axis.text.x = element_text(size = base.size * 0.8, family = base.family, color = base.col),
-    axis.text.y = element_text(size = base.size * 0.8, family = base.family, color = base.col, angle = 90, hjust = 0.5),
-    axis.title.y.left = element_text(size = base.size * 0.9, family = base.family, color = base.col, face = 'bold', margin = margin(r = 1)),
-    axis.title.x.bottom = element_text(size = base.size * 0.9, family = base.family, color = base.col, face = 'bold', margin = margin(t = 5))
+    axis.text.x = element_text(size = base.size, family = base.family, color = base.col),
+    axis.text.y = element_text(size = base.size, family = base.family, color = base.col, angle = 90, hjust = 0.5),
+    axis.title.y.left = element_text(size = base.size, family = base.family, color = base.col, face = 'bold', margin = margin(r = 1)),
+    axis.title.x.bottom = element_text(size = base.size, family = base.family, color = base.col, face = 'bold', margin = margin(t = 5))
   ); p3
 
 # Combination
@@ -137,5 +137,33 @@ gg <- p2 | p3
 print(gg)
 
 # Save to file
-width = 12; height = 4
-ggsave(gg, filename = glue('{fig.dir}/{ofig}_{flu}.pdf'), width = width, height = height, units = 'in', bg = '#FFFFFF')
+ggsave(gg, filename = glue('{fig.dir}/{ofig}_{flu}.pdf'), width = 180, height = 70, units = 'mm', device = cairo_pdf, bg = '#FFFFFF')
+
+# ------------------------------------------------------------------------------
+# Export Source Data
+# ------------------------------------------------------------------------------
+source.dir <- glue('{rt.dir}/Source data')
+if (flu == 'FLUB') {
+  fig.label <- 'Fig.S10'
+} else {
+  fig.label <- 'Fig.S9'
+}
+
+write_source_txt <- function(df, panel, title) {
+  con <- file(glue('{source.dir}/{fig.label}{panel}.txt'), open = 'wt', encoding = 'UTF-8')
+  writeLines(c(
+    glue('Source data for {fig.label}{panel}: {title}')
+  ), con)
+  write.table(df, file = con, sep = '\t', row.names = FALSE, quote = FALSE, na = '')
+  close(con)
+}
+
+write_source_txt(
+  dat.ana, panel = 'A',
+  title = 'Daily proportion of influenza cases presenting to the emergency department versus outpatient settings, pre- versus post-pandemic'
+)
+
+write_source_txt(
+  dat.plot, panel = 'B',
+  title = 'Odds ratio for emergency department attendance in the post-pandemic period versus pre-pandemic baseline (binomial GLM, 95% CI)'
+)

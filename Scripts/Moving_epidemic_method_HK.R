@@ -13,8 +13,8 @@ fig.dir <- glue('{rt.dir}/Figures')
 tbl.dir <- glue('{rt.dir}/Tables')
 ofig <- tools::file_path_sans_ext(basename(basename(this.path::this.path())))
 this <- 'HK'
-base.size <- 18
-base.family <- 'serif'
+base.size <- 7
+base.family <- 'sans'
 base.col <- '#000000'
 
 # Define functions
@@ -27,10 +27,10 @@ memsurveillance. <- function(
     i.epidemic.start = NA, i.range.x = c(40, 20), i.range.x.53 = FALSE, 
     i.range.y = NA, i.no.labels = FALSE, i.start.end.marks = TRUE, 
     i.mem.info = TRUE,
-    legend.x = NULL, legend.y = NULL, legend.cex = 1, legend.y.intersp = 0.8, legend.ncol = 1,
-    axis.text.cex = 1, axis.text.line = 0.7, axis.text.t.col = '#000000', axis.text.l.col = '#000000',
+    legend.x = NULL, legend.y = NULL, legend.cex = 0.8, legend.y.intersp = 0.8, legend.ncol = 1,
+    axis.text.cex = 0.8, axis.text.line = 0.7, axis.text.t.col = '#000000', axis.text.l.col = '#000000',
     axis.title.x = "Week", axis.title.y = "Weekly rate",
-    axis.title.cex = 1, axis.title.col = '#000000', axis.title.line.x = 2.5, axis.title.line.y = 1.8
+    axis.title.cex = 0.6, axis.title.col = '#000000', axis.title.line.x = 2.5, axis.title.line.y = 1.8
 ) {
   if (is.null(dim(i.current))) {
     stop("Incorrect number of dimensions, input must be a data.frame.")
@@ -152,15 +152,15 @@ memsurveillance. <- function(
     col = colores, xlab = "", ylab = "", axes = FALSE, ylim = range.y, 
     main = i.graph.title
   )
-  points(1:semanas, dgraf[, 1], pch = 19, type = "p", col = "#000000", cex = 1)
+  points(1:semanas, dgraf[, 1], pch = 19, type = "p", col = "#000000", cex = 0.8)
   if (i.start.end.marks) {
     if (!is.na(semana.inicio)) 
-      points(x = semana.inicio, y = current.season$rates[semana.inicio], pch = 1, bg = "#FFFFFF", col = "#CC79A7", lwd = 7)
+      points(x = semana.inicio, y = current.season$rates[semana.inicio], pch = 1, bg = "#FFFFFF", col = "#CC79A7", lwd = 3.5)
     if (!is.na(semana.fin) && i.pos.epidemic) {
       if (is.na(current.season$rates[semana.fin])) {
         points(x = semana.fin, y = 0, pch = 13, bg = "#FFFFFF", col = "#56B4E9", lwd = 7)
       } else {
-        points(x = semana.fin, y = current.season$rates[semana.fin], pch = 1, bg = "#FFFFFF", col = "#56B4E9", lwd = 7)
+        points(x = semana.fin, y = current.season$rates[semana.fin], pch = 1, bg = "#FFFFFF", col = "#56B4E9", lwd = 3.5)
       }
     }
   }
@@ -177,7 +177,7 @@ memsurveillance. <- function(
       text.y <- umbral.pre
       text.l <- round(umbral.pre, 2)
       text.p <- 3
-      text.s <- 1
+      text.s <- 0.8
       text.c <- colores[2]
     } else {
       if (is.na(semana.fin)) { lugar.intensidad <- min(semanas, semana.inicio + max(duracion.media, semana.report - semana.inicio + 1)) } else { lugar.intensidad <- semana.fin - 1 }
@@ -185,7 +185,7 @@ memsurveillance. <- function(
       text.y <- c(umbral.pre, limites.niveles, umbral.pos)
       text.l <- round(c(umbral.pre, limites.niveles, umbral.pos), 2)
       text.p <- rep(3, 5)
-      text.s <- rep(1, 5)
+      text.s <- rep(0.8, 5)
       text.c <- colores[c(2:5, 2)]
       quitar.columnas <- numeric()
       if (!i.pos.epidemic || is.na(semana.fin)) quitar.columnas <- c(quitar.columnas, 5)
@@ -203,7 +203,7 @@ memsurveillance. <- function(
   }
   etiquetas.leyenda <- c("End", "Start", etiquetas)
   tipos.leyenda <- c(NA, NA, tipos)
-  anchos.leyenda <- c(7, 7, anchos)
+  anchos.leyenda <- c(3.5, 3.5, anchos)
   colores.leyenda <- c("#56B4E9", "#CC79A7", colores)
   puntos.leyenda <- c(1, 1, rep(NA, 5))
   bg.leyenda <- c("#FFFFFF", "#FFFFFF", rep(NA, 5))
@@ -244,10 +244,10 @@ memsurveillance. <- function(
 }
 
 plot.mem. <- function(
-    x, legend.x = NULL, legend.y = NULL, legend.cex = 1, legend.y.intersp = 0.8, legend.ncol = 1,
-    axis.text.cex = 1, axis.text.line = 0.7, axis.text.t.col = '#000000', axis.text.l.col = '#000000',
+    x, legend.x = NULL, legend.y = NULL, legend.cex = 0.8, legend.y.intersp = 0.8, legend.ncol = 1,
+    axis.text.cex = 0.8, axis.text.line = 0.7, axis.text.t.col = '#000000', axis.text.l.col = '#000000',
     axis.title.x = "Week", axis.title.y = "Weekly rate",
-    axis.title.cex = 1, axis.title.col = '#000000', axis.title.line.x = 2.5, axis.title.line.y = 1.8,
+    axis.title.cex = 0.6, axis.title.col = '#000000', axis.title.line.x = 2.5, axis.title.line.y = 1.8,
     plot = TRUE
 ) {
   semanas <- dim(x$data)[1]
@@ -542,7 +542,8 @@ if (TRUE) {
 }
 
 # Save to file
-width <- 9; height <- 6
+mm <- function(x) x / 25.4
+width <- mm(180); height <- mm(120)
 mfrow <- c(2, 3)
 mar.a <- c(2, 3, 0, 1.5) + 0.1
 mar.b <- c(2, 1.5, 0, 0) + 0.1
@@ -550,13 +551,13 @@ mar.a2 <- c(4, 3, 1, 1.5) + 0.1
 mar.b2 <- c(4, 1.5, 1, 0) + 0.1
 x.just <- 0.06
 
-pdf(glue('{fig.dir}/{ofig}.pdf'), width = width, height = height, family = "Times", bg = '#FFFFFF')
-opar <- par(mfrow = mfrow, mar = mar.a, mgp = c(3, 0.5, 0), xpd = TRUE, family = 'serif')
+pdf(glue('{fig.dir}/{ofig}.pdf'), width = width, height = height, family = base.family, bg = '#FFFFFF')
+opar <- par(mfrow = mfrow, mar = mar.a, mgp = c(3, 0.5, 0), xpd = TRUE, family = base.family)
 men.list <- plot.mem.(
   x = mem.model.A,
   legend.x = 28.72,
   legend.y = 0.59,
-  legend.cex = 1,
+  legend.cex = 0.8,
   legend.y.intersp = 1.0, 
   legend.ncol = 2,
   axis.text.line = 0.8
@@ -566,12 +567,12 @@ x.pos <- usr[1] - x.just*(usr[2] - usr[1])
 y.pos <- usr[4] - 0.00*(usr[4] - usr[3])
 
 if (TRUE) {
-  opar <- par(mar = mar.b, mgp = c(3, 0.5, 0), xpd = TRUE, family = 'serif')
+  opar <- par(mar = mar.b, mgp = c(3, 0.5, 0), xpd = TRUE, family = base.family)
   men.list <- plot.mem.(
     x = mem.model.A1,
     legend.x = 30.72,
     legend.y = 0.59,
-    legend.cex = 1,
+    legend.cex = 0.8,
     legend.y.intersp = 1.0, 
     legend.ncol = 2,
     axis.text.line = 0.8, 
@@ -599,7 +600,7 @@ if (TRUE) {
     i.start.end.marks = TRUE,
     legend.x = 29.72,
     legend.y = 0.58,
-    legend.cex = 1,
+    legend.cex = 0.8,
     legend.y.intersp = 1.0,
     axis.text.line = 0.8
   )
@@ -609,12 +610,12 @@ if (TRUE) {
 }
 
 if (TRUE) {
-  opar <- par(mar = mar.b, mgp = c(3, 0.5, 0), xpd = TRUE, family = 'serif')
+  opar <- par(mar = mar.b, mgp = c(3, 0.5, 0), xpd = TRUE, family = base.family)
   men.list <- plot.mem.(
     x = mem.model.A2,
     legend.x = 30.72,
     legend.y = 0.59,
-    legend.cex = 1,
+    legend.cex = 0.8,
     legend.y.intersp = 1.0, 
     legend.ncol = 2,
     axis.text.line = 0.8, 
@@ -642,7 +643,7 @@ if (TRUE) {
     i.start.end.marks = TRUE,
     legend.x = 29.72,
     legend.y = 0.58,
-    legend.cex = 1,
+    legend.cex = 0.8,
     legend.y.intersp = 1.0,
     axis.text.line = 0.8
   )
@@ -651,12 +652,12 @@ if (TRUE) {
   y.pos <- usr[4] - 0.00*(usr[4] - usr[3])
 }
 
-opar <- par(mar = mar.a2, mgp = c(3, 0.5, 0), xpd = TRUE, family = 'serif')
+opar <- par(mar = mar.a2, mgp = c(3, 0.5, 0), xpd = TRUE, family = base.family)
 men.list <- plot.mem.(
   x = mem.model.B,
   legend.x = 25.72,
   legend.y = 0.50,
-  legend.cex = 1,
+  legend.cex = 0.8,
   legend.y.intersp = 1.0, 
   legend.ncol = 2,
   axis.text.line = 0.8
@@ -666,12 +667,12 @@ x.pos <- usr[1] - x.just*(usr[2] - usr[1])
 y.pos <- usr[4] - 0.00*(usr[4] - usr[3])
 
 if (TRUE) {
-  opar <- par(mar = mar.b2, mgp = c(3, 0.5, 0), xpd = TRUE, family = 'serif')
+  opar <- par(mar = mar.b2, mgp = c(3, 0.5, 0), xpd = TRUE, family = base.family)
   men.list <- plot.mem.(
     x = mem.model.B1,
     legend.x = 25.72,
     legend.y = 0.50,
-    legend.cex = 1,
+    legend.cex = 0.8,
     legend.y.intersp = 1.0, 
     legend.ncol = 2,
     axis.text.line = 0.8,
@@ -699,7 +700,7 @@ if (TRUE) {
     i.start.end.marks = TRUE,
     legend.x = 29.72,
     legend.y = 0.50,
-    legend.cex = 1,
+    legend.cex = 0.8,
     legend.y.intersp = 1.0,
     axis.text.line = 0.8
   )
@@ -709,12 +710,12 @@ if (TRUE) {
 }
 
 if (TRUE) {
-  opar <- par(mar = mar.b2, mgp = c(3, 0.5, 0), xpd = TRUE, family = 'serif')
+  opar <- par(mar = mar.b2, mgp = c(3, 0.5, 0), xpd = TRUE, family = base.family)
   men.list <- plot.mem.(
     x = mem.model.B2,
     legend.x = 25.72,
     legend.y = 0.50,
-    legend.cex = 1,
+    legend.cex = 0.8,
     legend.y.intersp = 1.0, 
     legend.ncol = 2,
     axis.text.line = 0.8,
@@ -742,7 +743,7 @@ if (TRUE) {
     i.start.end.marks = TRUE,
     legend.x = 29.72,
     legend.y = 0.50,
-    legend.cex = 1,
+    legend.cex = 0.8,
     legend.y.intersp = 1.0,
     axis.text.line = 0.8
   )
@@ -753,3 +754,24 @@ if (TRUE) {
 
 par(opar)
 dev.off()
+
+
+# ------------------------------------------------------------------------------
+# Export Source Data
+# ------------------------------------------------------------------------------
+source.dir <- glue('{rt.dir}/Source data')
+fig.label <- 'Fig.S7'
+
+# Model objects + season-week matrices -> single rds
+dat.s6 <- list(
+  model_A_all    = mem.model.A,  mat_A_all    = UDF.mat.A,
+  model_A_pre    = mem.model.A1, mat_A_pre    = UDF.mat.A1,
+  model_A_post   = mem.model.A2, mat_A_post   = UDF.mat.A2,
+  model_B_all    = mem.model.B,  mat_B_all    = UDF.mat.B,
+  model_B_pre    = mem.model.B1, mat_B_pre    = UDF.mat.B1,
+  model_B_post   = mem.model.B2, mat_B_post   = UDF.mat.B2,
+  thresholds_A_all  = thresholds.A,  thresholds_A_pre  = thresholds.A1,  thresholds_A_post  = thresholds.A2,
+  thresholds_B_all  = thresholds.B,  thresholds_B_pre  = thresholds.B1,  thresholds_B_post  = thresholds.B2
+)
+
+saveRDS(dat.s6, file = glue('{source.dir}/{fig.label}.rds'))

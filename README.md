@@ -52,6 +52,7 @@ Following: https://www.nature.com/documents/nr-software-policy.pdf
 - [Figures](./Figures): High-resolution publication-ready figures in PDF format.
 - [Tables](./Tables): Output tables and statistical summaries in Excel format.
 - [data](./data):  Datasets and input files required to reproduce the analysis.
+- [Source data](./Source data):  Source data for figures are provided as a Source Data file.
 
 
 
